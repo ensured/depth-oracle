@@ -4,6 +4,7 @@ import { useWallet } from "@/hooks/useWallet";
 import dynamic from "next/dynamic";
 import WalletConnect from "./WalletConnect";
 import { useWalletContext } from "@/context/WalletContext";
+import WalletModal from "./WalletModal";
 // import WalletConnect from "./WalletConnect";
 
 // Dynamically import the TransactionBuilder with SSR disabled
@@ -42,9 +43,9 @@ export default function Main() {
             <DynamicTransactionBuilder />
           </div>
         )}
-
-
       </div>
+      <WalletModal />
+
     </div>
   );
 }

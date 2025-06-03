@@ -4,7 +4,7 @@ import { Blockfrost, Lucid } from "@lucid-evolution/lucid";
 import { useRef } from "react";
 
 export const useWallet = () => {
-  // Always use Testnet (Preprod) for this example
+  // Always use Testnet (Preview/Preprod) for this example
   const network = NetworkType.TESTNET;
   const hasLogged = useRef(false);
   const lucidInstance = useRef<Awaited<ReturnType<typeof Lucid>> | null>(null);

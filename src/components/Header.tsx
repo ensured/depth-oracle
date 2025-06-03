@@ -1,11 +1,16 @@
 // components/Header.tsx
 "use client";
 import dynamic from "next/dynamic";
-// import ConnectButton from "@/components/ConnectButton";
 import Image from "next/image";
 
 const ConnectButton = dynamic(
     () => import("@/components/ConnectButton"),
+    { ssr: false }
+);
+
+// Same dynamic import for the modal
+const WalletModal = dynamic(
+    () => import("@/components/WalletModal"),
     { ssr: false }
 );
 

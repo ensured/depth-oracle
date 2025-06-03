@@ -10,7 +10,9 @@ export default function Home() {
     <WalletProvider>
       <div className="flex flex-col min-h-screen bg-zinc-950">
         <Header />
-        <HomeContent />
+        <main className="pt-16">
+          <HomeContent />
+        </main>
         <Footer />
       </div>
     </WalletProvider>
