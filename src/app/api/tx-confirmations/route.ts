@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
     const koiosUrl = isTestnet
       ? "https://preprod.koios.rest/api/v1/tx_status"
       : "https://api.koios.rest/api/v1/tx_status";
+    console.log(process.env.KOIOS_API_KEY);
 
     // Fetch transaction details from Koios
     const response = await fetch(koiosUrl, {
@@ -36,6 +37,7 @@ export async function GET(request: NextRequest) {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
+        authorization: "Bearer " + process.env.KOIOS_API_KEY,
       },
       body: JSON.stringify({
         _tx_hashes: [txHash],
