@@ -1,35 +1,63 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import WalletConnect from "./WalletConnect";
-
-// Dynamically import the TransactionBuilder with SSR disabled
-const DynamicTransactionBuilder = dynamic(
-  () => import("./TransactionBuilder"),
-  { ssr: false }
-);
+import { useState, useEffect } from "react";
+import { useUser } from "@clerk/nextjs";
+import InputForm from "./InputForm";
+import { WalletCreditsModal } from "./WalletCreditsModal";
+import { getCreditUsageInfo } from "@/lib/token-usage";
 
 export default function Main() {
-  return (
-    <div className="w-full">
-      {/* Card container with continuous design */}
-      <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-lg shadow-md overflow-hidden">
-        {/* Wallet section */}
-        <div className="border-b border-zinc-800/40">
-          <div className="px-5 py-3 border-b border-zinc-800/20">
-            <h3 className="text-sm font-medium text-zinc-100">Wallet</h3>
-          </div>
-          <WalletConnect />
-        </div>
+  const { user } = useUser();
+  const [showWalletModal, setShowWalletModal] = useState(false);
+  const [tokenInfo, setTokenInfo] = useState<{
+    used: number;
+    remaining: number;
+    total: number;
+    plan: string;
+    resetDate?: string;
+    percentageUsed: number;
+  } | null>(null);
 
-        {/* Transaction section */}
-        <div>
-          <div className="px-5 py-3 border-b border-zinc-800/20">
-            <h3 className="text-sm font-medium text-zinc-100">Transaction</h3>
-          </div>
-          <DynamicTransactionBuilder />
-        </div>
-      </div>
+  const fetchTokenInfo = async () => {
+    if (user?.id) {
+      try {
+        const info = await getCreditUsageInfo(user.id);
+        console.log("Token info:", info);
+        setTokenInfo(info);
+      } catch (error) {
+        console.error("Failed to fetch token info:", error);
+      }
+    }
+  };
+
+  useEffect(() => {
+    console.log("Main useEffect triggered. User ID:", user?.id);
+    if (!user?.id) {
+      console.log("User ID missing, skipping fetch");
+      return;
+    }
+    console.log("Fetching token info for user:", user.id);
+    fetchTokenInfo();
+  }, [user?.id]);
+
+  if (!user) {
+    return null; // Or a loading spinner / redirect
+  }
+
+  return (
+    <div className="w-full h-full">
+      <InputForm
+        userId={user.id}
+        tokenInfo={tokenInfo}
+        onCreditsUsed={fetchTokenInfo}
+        onOpenPricing={() => setShowWalletModal(true)}
+      />
+      <WalletCreditsModal
+        open={showWalletModal}
+        onOpenChange={setShowWalletModal}
+        tokenInfo={tokenInfo}
+        onSuccess={fetchTokenInfo}
+      />
     </div>
   );
 }

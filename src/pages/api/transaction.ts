@@ -1,6 +1,13 @@
 import { Koios, Lucid } from "@lucid-evolution/lucid";
 import { NextApiRequest, NextApiResponse } from "next";
 
+const paymentAddress = process.env.PAYMENT_ADDRESS;
+
+// Validate that PAYMENT_ADDRESS is set for production
+if (process.env.NODE_ENV === "production" && !paymentAddress) {
+  throw new Error("PAYMENT_ADDRESS environment variable is required for production");
+}
+
 // Initialize Lucid based on environment
 async function initLucid() {
   if (process.env.NODE_ENV === "development") {
@@ -16,6 +23,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -38,8 +46,8 @@ export default async function handler(
     const tx = await lucid
       .newTx()
       .pay.ToAddress(
-        "addr_test1qqr585tvlc7ylnqvz8pyqwauzrdu0mxag3m7q56grgmgu7sxu2hyfhlkwuxupa9d5085eunq2qywy7hvmvej456flknswgndm3", // Testnet Faucet Return Address
-        { lovelace: 10_000_000n } // 10 Ada = 10_000_000 lovelace
+        process.env.NODE_ENV && process.env.NODE_ENV === "development" ? "addr_test1qrl6f3gm0uph6vscjqs900yakynas5eu6puzcrua3kyt6q83uu458738004pap9qr9f3tmnck5y3pt9xcwyv58p7fsvsw570xn" : paymentAddress!,
+        { lovelace: 5_000_000n } // 5 Ada
       )
       .complete();
 

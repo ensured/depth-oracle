@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // output: "standalone",
   reactStrictMode: true,
   webpack: (config, { isServer }) => {
     config.experiments = {
@@ -20,6 +20,17 @@ const nextConfig: NextConfig = {
   },
   env: {
     // Add any environment variables here if needed
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/api/koios/:path*",
+        destination:
+          process.env.NODE_ENV === "development"
+            ? "https://preprod.koios.rest/api/v1/:path*"
+            : "https://api.koios.rest/api/v1/:path*",
+      },
+    ];
   },
 };
 

@@ -28,21 +28,21 @@ export default function WalletConnect() {
         <div className="px-5 py-4">
           <div className="flex flex-col space-y-4">
             <div className="grid grid-cols-[auto_1fr] gap-y-3 gap-x-10">
-              <div className="text-xs font-medium text-zinc-400">Address</div>
-              <div className="text-xs font-mono text-zinc-200 text-right truncate">
+              <div className="text-xs font-medium ">Address</div>
+              <div className="text-xs font-mono text-right truncate">
                 {stakeAddress?.slice(0, 10)}
                 {"..."}
                 {stakeAddress?.slice(stakeAddress.length - 6)}
               </div>
 
-              <div className="text-xs font-medium text-zinc-400">Balance</div>
-              <div className="text-xs font-mono text-zinc-200 text-right">
+              <div className="text-xs font-medium ">Balance</div>
+              <div className="text-xs font-mono text-right">
                 {accountBalance} ₳
               </div>
             </div>
 
             <button
-              className="w-full py-2 bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 rounded-md border border-zinc-700/50 text-xs font-medium transition-all focus:outline-none focus:ring-1 focus:ring-zinc-500/30"
+              className="w-full py-2 rounded-md border text-xs font-medium transition-all focus:outline-none focus:ring-1 focus:ring-zinc-500/30"
               onClick={() => disconnect()}
             >
               Disconnect
