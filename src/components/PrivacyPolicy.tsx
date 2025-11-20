@@ -17,7 +17,7 @@ export default function PrivacyPolicy() {
           <section className="mb-8">
             <h3 className="text-2xl font-semibold mb-4">2. Data We Collect</h3>
             <p>
-              Free Tier Users: We collect only your Clerk ID (a unique user
+              Free Tier Users: We collect only your Wallet Address (a unique user
               identifier) to enable account access.
             </p>
             <p>
@@ -46,7 +46,7 @@ export default function PrivacyPolicy() {
             <h3 className="text-2xl font-semibold mb-4">
               3. How We Use Your Data
             </h3>
-            <p>Clerk ID: Used solely for account authentication and access.</p>
+            <p>Wallet Address: Used solely for account authentication and access.</p>
             <p>
               Name and Email (Paid Tier): Used to manage your subscription and
               communicate with you.
@@ -60,13 +60,6 @@ export default function PrivacyPolicy() {
             <h3 className="text-2xl font-semibold mb-4">4. Data Sharing</h3>
             <p>Third Parties:</p>
             <ul className="list-disc list-inside mb-4">
-              <li>
-                Clerk: Manages authentication and stores your Clerk ID. See{" "}
-                <a href="#" className="hover:underline">
-                  Clerk&apos;s Privacy Policy
-                </a>
-                .
-              </li>
               <li>
                 Stripe: Processes payments for paid-tier users. See{" "}
                 <a href="#" className="hover:underline">
@@ -82,7 +75,7 @@ export default function PrivacyPolicy() {
             <h3 className="text-2xl font-semibold mb-4">5. Your Rights</h3>
             <p>You have the right to:</p>
             <ul className="list-disc list-inside mb-4">
-              <li>Access or delete your Clerk ID.</li>
+              <li>Access or delete your Wallet Address data.</li>
               <li>Access or correct your name and email (paid-tier users).</li>
               <li>Contact Stripe directly for payment-related requests.</li>
             </ul>
@@ -95,7 +88,7 @@ export default function PrivacyPolicy() {
           <section className="mb-8">
             <h3 className="text-2xl font-semibold mb-4">6. Data Security</h3>
             <p>
-              We use secure protocols (e.g., HTTPS) and rely on Clerk and
+              We use secure protocols (e.g., HTTPS) and rely on
               Stripe&apos;s robust security measures to protect your data. Elara
               inputs are processed live and not stored, ensuring no risk of data
               breaches for those interactions.
@@ -104,8 +97,8 @@ export default function PrivacyPolicy() {
           <section className="mb-8">
             <h3 className="text-2xl font-semibold mb-4">7. Data Retention</h3>
             <p>
-              We retain your Clerk ID as long as your account is active. Upon
-              account deletion, your Clerk ID is removed.
+              We retain your Wallet Address as long as your account is active. Upon
+              account deletion, your Wallet Address is removed.
             </p>
             <p>
               Name and email (paid-tier users) are retained only for active

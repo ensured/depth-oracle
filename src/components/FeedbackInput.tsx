@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useState, useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { Star } from "lucide-react";
@@ -45,7 +44,6 @@ const feedbackFormSchema = z.object({
 });
 
 const FeedbackInput = () => {
-  const { user } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedbackSubmissions, setFeedbackSubmissions] = useState<number[]>([]);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
@@ -80,15 +78,6 @@ const FeedbackInput = () => {
       setFeedbackSubmissions(recentSubmissions);
     }
   }, []);
-
-  // Load name and email from Clerk user
-  useEffect(() => {
-    if (user?.id) {
-      form.setValue("name", user.firstName || "");
-      form.setValue("email", user.emailAddresses?.[0]?.emailAddress || "");
-    }
-    form.setFocus("feedback");
-  }, [user?.id, form]);
 
   const checkRateLimit = () => {
     const now = Date.now();
@@ -173,11 +162,6 @@ const FeedbackInput = () => {
         const newSubmissions = [...feedbackSubmissions, Date.now()];
         saveSubmissions(newSubmissions);
 
-        if (user?.id) {
-          form.setValue("name", user.firstName || "");
-          form.setValue("email", user.emailAddresses?.[0]?.emailAddress || "");
-        }
-
         form.setValue("rating", 0);
         form.setValue("feedback", "");
 
@@ -234,7 +218,7 @@ const FeedbackInput = () => {
                   <FormLabel>Name</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={user?.firstName || "Your name"}
+                      placeholder="Your name"
                       {...field}
                     />
                   </FormControl>
@@ -251,10 +235,7 @@ const FeedbackInput = () => {
                   <FormLabel>Email</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={
-                        user?.emailAddresses?.[0]?.emailAddress ||
-                        "your.email@example.com"
-                      }
+                      placeholder="your.email@example.com"
                       {...field}
                     />
                   </FormControl>
