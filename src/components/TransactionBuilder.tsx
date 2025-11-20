@@ -33,7 +33,7 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
       ? NetworkType.TESTNET
       : NetworkType.MAINNET;
 
-  const { isConnected, usedAddresses, enabledWallet } = useCardano({
+  const { isConnected, usedAddresses, enabledWallet, accountBalance } = useCardano({
     limitNetwork: network,
   });
 
@@ -135,6 +135,10 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
 
       // Select wallet
       lucid.selectWallet.fromAPI(api);
+
+      if (accountBalance < 5.25) {
+        throw new Error("Not enough ada in wallet");
+      }
 
       // Make API request to build transaction
       const response = await fetch("/api/transaction", {
