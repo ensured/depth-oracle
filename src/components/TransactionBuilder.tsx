@@ -154,9 +154,6 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
         },
         body: JSON.stringify({ address: usedAddresses[0], walletBalance: accountBalance }),
       });
-      console.log(response);
-
-
 
       const { tx, error } = await response.json();
       if (error) {

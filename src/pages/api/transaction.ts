@@ -60,12 +60,6 @@ export default async function handler(
     let jsonError = JSON.stringify(error);
     const errorObject = JSON.parse(jsonError);
     jsonError = JSON.stringify(errorObject.cause.failure.cause);
-    console.log(
-      typeof jsonError,
-      jsonError.includes(
-        "Your wallet does not have enough funds to cover the required assets"
-      )
-    );
     let err;
     if (
       jsonError.includes(

@@ -29,7 +29,6 @@ export async function GET(request: NextRequest) {
     const koiosUrl = isTestnet
       ? "https://preprod.koios.rest/api/v1/tx_status"
       : "https://api.koios.rest/api/v1/tx_status";
-    console.log(process.env.KOIOS_API_KEY);
 
     // Fetch transaction details from Koios
     const response = await fetch(koiosUrl, {
@@ -48,13 +47,19 @@ export async function GET(request: NextRequest) {
       throw new Error(`Koios API error: ${response.statusText}`);
     }
 
-    const txData = await response.json();
+    // Define interface for Koios response
+    interface KoiosTxStatus {
+      tx_hash: string;
+      num_confirmations: number;
+    }
+
+    const txData = (await response.json()) as KoiosTxStatus[];
 
     // Check if transaction is found and confirmed
     // Koios returns an array of objects: [{ tx_hash: "...", num_confirmations: 123 }]
     // If tx is not found on chain yet, it might not be in the list or have 0 confirmations.
 
-    const txInfo = txData.find((t: any) => t.tx_hash === txHash);
+    const txInfo = txData.find((t) => t.tx_hash === txHash);
     const confirmations = txInfo?.num_confirmations || 0;
 
     let credited = false;
