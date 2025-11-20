@@ -34,7 +34,7 @@ export default async function handler(
     const lucid = await initLucid();
 
     // Get address from request body
-    const { address, walletBalance } = req.body;
+    const { address } = req.body;
 
     if (!address) {
       return res.status(400).json({ error: "Address is required" });

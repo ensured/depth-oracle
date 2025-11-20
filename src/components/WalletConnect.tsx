@@ -28,21 +28,21 @@ export default function WalletConnect() {
         <div className="px-5 py-4">
           <div className="flex flex-col space-y-4">
             <div className="grid grid-cols-[auto_1fr] gap-y-3 gap-x-10">
-              <div className="text-xs font-medium ">Address</div>
-              <div className="text-xs font-mono text-right truncate">
+              <div className="text-sm font-medium ">Address</div>
+              <div className="text-sm font-mono text-right truncate">
                 {stakeAddress?.slice(0, 10)}
                 {"..."}
                 {stakeAddress?.slice(stakeAddress.length - 6)}
               </div>
 
-              <div className="text-xs font-medium ">Balance</div>
-              <div className="text-xs font-mono text-right">
+              <div className="text-sm font-medium ">Balance</div>
+              <div className="text-sm font-mono text-right">
                 {accountBalance} ₳
               </div>
             </div>
 
             <button
-              className="w-full py-2 rounded-md border text-xs font-medium transition-all focus:outline-none focus:ring-1 focus:ring-zinc-500/30"
+              className="w-full py-2 rounded-md border text-sm font-medium transition-all focus:outline-none focus:ring-1 focus:ring-zinc-500/30"
               onClick={() => disconnect()}
             >
               Disconnect
@@ -52,7 +52,7 @@ export default function WalletConnect() {
       ) : (
         <div className="flex items-center justify-center px-5 py-8">
           <button
-            className="w-full max-w-xs py-2.5 bg-red-900/90 hover:bg-red-800 text-zinc-100 rounded-md border border-red-900/60 text-xs font-medium transition-all focus:outline-none focus:ring-1 focus:ring-red-700/30"
+            className="w-full max-w-xs py-2.5 bg-red-900/90 hover:bg-red-800 text-zinc-100 rounded-md border border-red-900/60 text-sm font-medium transition-all focus:outline-none focus:ring-1 focus:ring-red-700/30"
             onClick={() => setIsModalOpen(true)}
           >
             Connect Wallet
@@ -74,7 +74,7 @@ export default function WalletConnect() {
                 {installedExtensions.map((provider) => (
                   <button
                     key={provider}
-                    className="w-full px-4 py-2.5 bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 rounded-md border border-zinc-700/50 flex items-center justify-between transition-all text-xs font-medium focus:outline-none focus:ring-1 focus:ring-zinc-500/30"
+                    className="w-full px-4 py-2.5 bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 rounded-md border border-zinc-700/50 flex items-center justify-between transition-all text-sm font-medium focus:outline-none focus:ring-1 focus:ring-zinc-500/30"
                     onClick={() => {
                       connect(provider);
                       setIsModalOpen(false);
@@ -88,7 +88,7 @@ export default function WalletConnect() {
               </div>
 
               <button
-                className="w-full px-4 py-2 bg-zinc-800/60 text-zinc-300 rounded-md hover:bg-zinc-700 transition-all text-xs border border-zinc-700/40 font-medium focus:outline-none focus:ring-1 focus:ring-zinc-500/30"
+                className="w-full px-4 py-2 bg-zinc-800/60 text-zinc-300 rounded-md hover:bg-zinc-700 transition-all text-sm border border-zinc-700/40 font-medium focus:outline-none focus:ring-1 focus:ring-zinc-500/30"
                 onClick={() => setIsModalOpen(false)}
               >
                 Cancel
