@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect, useCallback } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -28,17 +27,131 @@ import {
 import { HybridTooltip } from "@/components/HybridTooltip";
 import { AI_MODEL } from "@/consts/const";
 import { RollingText } from "@/components/ui/shadcn-io/rolling-text";
+import { ThreadSelector } from "@/components/ThreadSelector";
+import { toast } from "sonner";
+import {
+  getAllThreads,
+  getThread,
+  createThread,
+  updateThread,
+  deleteThread as deleteThreadStorage,
+  renameThread,
+  getLastActiveThreadId,
+  migrateOldChatIfNeeded,
+  getMaxThreads,
+  isAtThreadLimit,
+  type ChatThread,
+  type Message,
+} from "@/lib/chat-storage";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
-const examplePrompts = [
-  "kept snapping at my roommate over dishes again. feels like im 10 and fighting with my brother. wtf is this pattern",
-  "doomscrolling old classmates' lives on fb—houses, babies, all that. im stuck and bitter. how do i snap out of it",
+
+const helpTopics = [
+  {
+    title: "Emotional Regulation",
+    desc: "Calm anxiety, anger, or overwhelm",
+    prompt: "I'm feeling overwhelmed and anxious right now. Can you help me calm down?"
+  },
+  {
+    title: "Shadow Work",
+    desc: "Identify and integrate hidden aspects",
+    prompt: "I want to explore my shadow. How do I start identifying my hidden patterns?"
+  },
+  {
+    title: "Archetypal Insight",
+    desc: "Map recurring patterns using archetypes",
+    prompt: "Can you help me identify which archetypes are active in my life right now?"
+  },
+  {
+    title: "Relationship Dynamics",
+    desc: "Improve communication & boundaries",
+    prompt: "I'm having trouble with a relationship. How can I set better boundaries?"
+  },
+  {
+    title: "Stress & Anxiety",
+    desc: "Reduce rumination & boost resilience",
+    prompt: "I can't stop overthinking. Do you have any strategies to stop rumination?"
+  },
+  {
+    title: "Life Purpose",
+    desc: "Clarify values & set meaningful goals",
+    prompt: "I feel lost and unsure of my direction. How can I clarify my life purpose?"
+  },
+  {
+    title: "Habit Building",
+    desc: "Turn small actions into lasting change",
+    prompt: "I want to build better habits but I keep failing. Can you help me start small?"
+  }
 ];
-type Message = {
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-  id: string;
+
+interface CreditsMeterProps {
+  creditInfo: {
+    remaining: number;
+    plan: string;
+    percentageUsed: number;
+  } | null;
+  animateCredits: boolean;
+  onOpenPricing?: () => void;
+}
+
+const CreditsMeter = ({ creditInfo, animateCredits, onOpenPricing }: CreditsMeterProps) => {
+  if (!creditInfo) return null;
+
+  const getStatusColor = () => {
+    if (creditInfo.percentageUsed < 32) return "bg-green-500/95";
+    if (creditInfo.percentageUsed < 56) return "bg-yellow-500/95";
+    if (creditInfo.percentageUsed < 76) return "bg-orange-500/95";
+    return "bg-red-500/95";
+  };
+
+  return (
+    <div className="rounded-lg border border-indigo-200/50 bg-white/80 p-2 sm:p-3 shadow-sm backdrop-blur-sm dark:bg-slate-800/80 dark:border-indigo-700/50 w-full sm:w-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 text-xs sm:text-sm">
+        <div className="flex items-center gap-2">
+          <div
+            className={`h-2 w-2 sm:h-3 sm:w-3 rounded-full ${getStatusColor()} shrink-0`}
+          ></div>
+          <span className="font-medium text-muted-foreground truncate">
+            {animateCredits ? (
+              <RollingText
+                key={`credits-${creditInfo.remaining}`}
+                text={`${creditInfo.remaining}`}
+              />
+            ) : (
+              `${creditInfo.remaining}`
+            )}{" "}
+            credit{creditInfo.remaining === 1 ? "" : "s"} left
+          </span>
+        </div>
+        <span className="text-xs text-muted-foreground sm:ml-2 md:ml-4 lg:ml-6 truncate">
+          {creditInfo.plan} plan
+        </span>
+      </div>
+      <div className="mt-2 h-1.5 sm:h-2 w-full rounded-full  dark:bg-gray-700">
+        <div
+          className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${getStatusColor()}`}
+          style={{ width: `${creditInfo.percentageUsed}%` }}
+        ></div>
+      </div>
+      {onOpenPricing && (
+        <Button
+          onClick={onOpenPricing}
+          size="sm"
+          variant="outline"
+          className="cursor-pointer w-full text-xs border-indigo-300 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-400 dark:border-indigo-600 dark:text-indigo-400 dark:hover:bg-indigo-900/20 mt-2 h-6 sm:h-7"
+        >
+          <Zap className="h-3 w-3 mr-1" />
+          <span className="hidden sm:inline">
+            Change Plan / Get More Credits
+          </span>
+          <span className="sm:hidden">Get Credits</span>
+        </Button>
+      )}
+    </div>
+  );
 };
+
 export default function InputForm({
   userId,
   onCreditsUsed,
@@ -57,9 +170,18 @@ export default function InputForm({
   } | null;
   onOpenPricing?: () => void;
 }) {
-  const [input, setInput] = useState(
-    examplePrompts[Math.floor(Math.random() * examplePrompts.length)]
-  );
+  // Thread Management State
+  const [threads, setThreads] = useState<ChatThread[]>([]);
+  const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
+  const threadsRef = useRef<ChatThread[]>([]);
+
+  // Keep threads ref in sync
+  useEffect(() => {
+    threadsRef.current = threads;
+  }, [threads]);
+
+  // UI State
+  const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
@@ -71,6 +193,60 @@ export default function InputForm({
   const prevRemaining = useRef<number | undefined>(undefined);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const isInitialMount = useRef(true);
+
+  // Initialize threads on mount
+  useEffect(() => {
+    // Migrate old chat format if needed
+    migrateOldChatIfNeeded(userId);
+
+    // Load all threads
+    const loadedThreads = getAllThreads(userId);
+    setThreads(loadedThreads);
+
+    // Determine which thread to load
+    let threadToLoad: ChatThread | null = null;
+
+    if (loadedThreads.length > 0) {
+      // Try to load last active thread
+      const lastThreadId = getLastActiveThreadId(userId);
+      if (lastThreadId) {
+        threadToLoad = loadedThreads.find(t => t.id === lastThreadId) || loadedThreads[0];
+      } else {
+        threadToLoad = loadedThreads[0];
+      }
+    } else {
+      // No threads exist, create first one
+      threadToLoad = createThread(userId);
+      setThreads([threadToLoad]);
+    }
+
+    if (threadToLoad) {
+      setCurrentThreadId(threadToLoad.id);
+      setMessages(threadToLoad.messages);
+    }
+  }, [userId]);
+
+  // Save current thread whenever messages change (debounced)
+  useEffect(() => {
+    if (currentThreadId && messages.length > 0) {
+      // Debounce the save to avoid excessive localStorage writes
+      const saveTimer = setTimeout(() => {
+        // Use ref to get latest threads without triggering effect loop
+        const currentThread = threadsRef.current.find(t => t.id === currentThreadId);
+        if (currentThread) {
+          const updatedThread = { ...currentThread, messages };
+          updateThread(updatedThread);
+
+          // Only update the specific thread in state, not re-fetch all
+          setThreads(prevThreads =>
+            prevThreads.map(t => t.id === currentThreadId ? updatedThread : t)
+          );
+        }
+      }, 500); // 500ms debounce
+
+      return () => clearTimeout(saveTimer);
+    }
+  }, [messages, currentThreadId]); // Removed threads from dependency
 
   // Effect to handle scrolling when messages change
   useEffect(() => {
@@ -109,9 +285,14 @@ export default function InputForm({
     const userMessage = input.trim();
     const wordCount = userMessage.split(/\s+/).length;
 
-    // Check if input has at least 10 words
-    if (wordCount < 10) {
-      setError("Share a bit more to dive deeper with Elara.");
+    // Check word count (10 for first message, 5 for follow-ups)
+    const minWords = messages.length === 0 ? 10 : 5;
+    if (wordCount < minWords) {
+      setError(
+        messages.length === 0
+          ? "Share a bit more to dive deeper with Elara (10+ words)."
+          : "Share a bit more to continue (5+ words)."
+      );
       return;
     }
 
@@ -207,16 +388,114 @@ export default function InputForm({
     }
   };
 
-  const clearConversation = useCallback(() => {
-    setMessages([]);
-    setError("");
-    localStorage.removeItem(`depth-oracle-chat-${userId}`);
-    // Focus the input after clearing
-    setTimeout(() => {
-      textareaRef.current?.focus();
-      setInput("");
-    }, 0);
+  // Thread Management Functions
+  const handleNewThread = useCallback(() => {
+    try {
+      if (isAtThreadLimit(userId)) {
+        toast.error(`Maximum ${getMaxThreads()} threads reached`, {
+          description: "Please delete some old threads to create new ones.",
+        });
+        return;
+      }
+
+      const newThread = createThread(userId);
+      setThreads(getAllThreads(userId));
+      setCurrentThreadId(newThread.id);
+      setMessages([]);
+      setError("");
+      toast.success("New conversation started");
+
+      // Focus the input
+      setTimeout(() => {
+        textareaRef.current?.focus();
+        setInput("");
+      }, 0);
+    } catch (error) {
+      toast.error("Failed to create new thread", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   }, [userId]);
+
+  const handleThreadSwitch = useCallback(
+    (threadId: string) => {
+      const thread = getThread(threadId, userId);
+      if (thread) {
+        setCurrentThreadId(thread.id);
+        setMessages(thread.messages);
+        setError("");
+        toast.success(`Switched to: ${thread.title}`);
+      }
+    },
+    [userId]
+  );
+
+  const handleDeleteThread = useCallback(
+    (threadId: string) => {
+      try {
+        deleteThreadStorage(threadId, userId);
+        const remainingThreads = getAllThreads(userId);
+        setThreads(remainingThreads);
+
+        // If we deleted the current thread, switch to another or create new
+        if (threadId === currentThreadId) {
+          if (remainingThreads.length > 0) {
+            const nextThread = remainingThreads[0];
+            setCurrentThreadId(nextThread.id);
+            setMessages(nextThread.messages);
+          } else {
+            // No threads left, create a new one
+            const newThread = createThread(userId);
+            setThreads([newThread]);
+            setCurrentThreadId(newThread.id);
+            setMessages([]);
+          }
+        }
+
+        toast.success("Thread deleted");
+      } catch (error) {
+        toast.error("Failed to delete thread", {
+          description: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    },
+    [userId, currentThreadId]
+  );
+
+  const handleRenameThread = useCallback(
+    (threadId: string, newTitle: string) => {
+      try {
+        renameThread(threadId, userId, newTitle);
+        setThreads(getAllThreads(userId));
+        toast.success("Thread renamed");
+      } catch (error) {
+        toast.error("Failed to rename thread", {
+          description: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    },
+    [userId]
+  );
+
+  const clearConversation = useCallback(() => {
+    // Clear messages in current thread
+    if (currentThreadId) {
+      const currentThread = threads.find(t => t.id === currentThreadId);
+      if (currentThread) {
+        const clearedThread = { ...currentThread, messages: [] };
+        updateThread(clearedThread);
+        setThreads(getAllThreads(userId));
+        setMessages([]);
+        setError("");
+
+        // Focus the input after clearing
+        setTimeout(() => {
+          textareaRef.current?.focus();
+          setInput("");
+        }, 0);
+      }
+    }
+  }, [currentThreadId, threads, userId]);
 
   const downloadText = (content: string, filename: string) => {
     const blob = new Blob([content], { type: "text/plain" });
@@ -226,99 +505,6 @@ export default function InputForm({
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
-  };
-
-  // New: Credits Meter Component
-  const CreditsMeter = () => {
-    if (!creditInfo) return null;
-
-    const getStatusColor = () => {
-      if (creditInfo.percentageUsed < 32) return "bg-green-500/95";
-      if (creditInfo.percentageUsed < 56) return "bg-yellow-500/95";
-      if (creditInfo.percentageUsed < 76) return "bg-orange-500/95";
-      return "bg-red-500/95";
-    };
-
-    return (
-      <div className="rounded-lg border border-indigo-200/50 bg-white/80 p-2 sm:p-3 shadow-sm backdrop-blur-sm dark:bg-slate-800/80 dark:border-indigo-700/50 w-full sm:w-auto">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 text-xs sm:text-sm">
-          <div className="flex items-center gap-2">
-            <div
-              className={`h-2 w-2 sm:h-3 sm:w-3 rounded-full ${getStatusColor()} shrink-0`}
-            ></div>
-            <span className="font-medium text-muted-foreground truncate">
-              {animateCredits ? (
-                <RollingText
-                  key={`credits-${creditInfo.remaining}`}
-                  text={`${creditInfo.remaining}`}
-                />
-              ) : (
-                `${creditInfo.remaining}`
-              )}{" "}
-              credits left
-            </span>
-          </div>
-          <span className="text-xs text-muted-foreground sm:ml-2 md:ml-4 lg:ml-6 truncate">
-            {creditInfo.plan} plan
-          </span>
-        </div>
-        <div className="mt-2 h-1.5 sm:h-2 w-full rounded-full  dark:bg-gray-700">
-          <div
-            className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${getStatusColor()}`}
-            style={{ width: `${creditInfo.percentageUsed}%` }}
-          ></div>
-        </div>
-        {onOpenPricing && (
-          <Button
-            onClick={onOpenPricing}
-            size="sm"
-            variant="outline"
-            className="cursor-pointer w-full text-xs border-indigo-300 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-400 dark:border-indigo-600 dark:text-indigo-400 dark:hover:bg-indigo-900/20 mt-2 h-6 sm:h-7"
-          >
-            <Zap className="h-3 w-3 mr-1" />
-            <span className="hidden sm:inline">
-              Change Plan / Get More Credits
-            </span>
-            <span className="sm:hidden">Get Credits</span>
-          </Button>
-        )}
-      </div>
-    );
-  };
-
-  // New: Token Usage Meter Component
-  const TokenMeter = () => {
-    // Calculate current session token usage
-    const currentTokens = messages.reduce((total, msg) => {
-      return total + Math.ceil(msg.content.length / 4); // ~4 chars per token
-    }, 0);
-
-    const tokenPercentage = Math.min((currentTokens / 10000) * 100, 100);
-    const isNearLimit = tokenPercentage > 80;
-
-    const getTokenStatusColor = () => {
-      if (tokenPercentage < 25) return "bg-green-500/95";
-      if (tokenPercentage < 50) return "bg-yellow-500/95";
-      if (tokenPercentage < 75) return "bg-orange-500/95";
-      return "bg-red-500/95";
-    };
-
-    return (
-      <div className="flex justify-center">
-        <Badge
-          variant="outline"
-          className={`text-xs px-2 py-1 h-auto font-mono ${isNearLimit
-            ? "border-orange-300 bg-orange-50 text-orange-700 dark:border-orange-600 dark:bg-orange-900/20 dark:text-orange-300"
-            : "border-gray-300 bg-gray-50 text-gray-600 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400"
-            }`}
-        >
-          <div
-            className={`w-2 h-2 rounded-full mr-1.5 ${getTokenStatusColor()}`}
-          />
-          {currentTokens.toLocaleString()}/10k
-        </Badge>
-      </div>
-    );
   };
 
   // Reset copied state after 2 seconds
@@ -351,26 +537,45 @@ export default function InputForm({
 
   return (
     <div className="mx-auto w-full">
-      <div className="rounded-md w-[100vw] h-[calc(100vh-3.6rem)] flex flex-col bg-gradient-to-br from-white via-indigo-50/20 to-purple-50/20 dark:from-slate-800 dark:via-indigo-900/20 dark:to-purple-900/20 shadow-xl backdrop-blur-sm dark:border-gray-700/50">
+      <div className="rounded-md w-[100vw] h-[calc(100vh-3.6rem)] flex flex-col bg-gradient-to-br from-white via-indigo-50/20 to-purple-50/20 dark:from-slate-800 dark:via-indigo-900/20 dark:to-purple-900/20 shadow-xl dark:border-gray-700/50">
         {/* Chat Header */}
         <div className="border-b border-gray-200/50 p-4 sm:p-6 dark:border-gray-700/50">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="flex items-center flex-1 min-w-0">
-              <div className="mr-3 sm:mr-4 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 shrink-0">
-                <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+          <div className="flex flex-col">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex items-center flex-1 min-w-0">
+                <div className="mr-3 sm:mr-4 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 shrink-0">
+                  <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-lg sm:text-xl font-bold text-transparent truncate dark:text-primary">
+                    Chat with Elara
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
+                    Uncover Your Depths, Embrace Your Whole Self
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-lg sm:text-xl font-bold text-transparent truncate dark:text-primary">
-                  Chat with Elara
-                </h3>
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
-                  Uncover Your Depths, Embrace Your Whole Self
-                </p>
+
+              <div className="flex-shrink-0">
+                <CreditsMeter
+                  creditInfo={creditInfo}
+                  animateCredits={animateCredits}
+                  onOpenPricing={onOpenPricing}
+                />
               </div>
             </div>
 
-            <div className="flex-shrink-0">
-              <CreditsMeter />
+            {/* Thread Selector */}
+            <div className="flex items-center gap-2">
+              <ThreadSelector
+                threads={threads}
+                currentThreadId={currentThreadId}
+                onThreadSelect={handleThreadSwitch}
+                onNewThread={handleNewThread}
+                onDeleteThread={handleDeleteThread}
+                onRenameThread={handleRenameThread}
+                maxThreads={getMaxThreads()}
+              />
             </div>
           </div>
         </div>
@@ -382,12 +587,34 @@ export default function InputForm({
           ref={messagesContainerRef}
         >
           {messages.length === 0 && (
-            <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400 px-4">
-              <div className="text-center">
-                <MessageSquare className="mx-auto h-10 w-10 sm:h-12 sm:w-12 mb-3 sm:mb-4 opacity-50" />
-                <p className="text-base sm:text-lg mb-2">
-                  Elara awaits your inner story
-                </p>
+            <div className="flex flex-col items-center min-h-full text-gray-500 dark:text-gray-400 px-4 py-8">
+              <div className="w-full max-w-4xl my-auto flex flex-col items-center">
+                <div className="text-center mb-8 shrink-0">
+                  <MessageSquare className="mx-auto h-10 w-10 sm:h-12 sm:w-12 mb-2 opacity-50 text-indigo-500" />
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-700 dark:text-gray-200">
+                    How can Elara help you today?
+                  </h2>
+                  <p className="text-sm sm:text-base max-w-md mx-auto">
+                    Select a topic to start your journey of self-discovery and growth.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 w-full pb-4">
+                  {helpTopics.map((topic, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setInput(topic.prompt)}
+                      className="text-left p-4 rounded-xl border border-gray-200/50 bg-white/50 hover:bg-white hover:border-indigo-300 hover:shadow-md transition-all dark:bg-slate-800/50 dark:border-gray-700/50 dark:hover:bg-slate-800 dark:hover:border-indigo-500 group"
+                    >
+                      <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors text-sm sm:text-base">
+                        {topic.title}
+                      </h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                        {topic.desc}
+                      </p>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -459,8 +686,46 @@ export default function InputForm({
                   </div>
                 )}
 
-                <div className="whitespace-pre-wrap text-sm leading-relaxed break-words pr-4">
-                  {message.content}
+                <div className="prose prose-sm dark:prose-invert max-w-none break-words prose-p:leading-relaxed prose-pre:p-0 pr-4 overflow-hidden">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                      ul: ({ children }) => <ul className="list-disc pl-4 mb-2 space-y-1">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 space-y-1">{children}</ol>,
+                      li: ({ children }) => <li className="mb-1">{children}</li>,
+                      h1: ({ children }) => <h1 className="text-lg font-bold mb-2 mt-4">{children}</h1>,
+                      h2: ({ children }) => <h2 className="text-base font-bold mb-2 mt-3">{children}</h2>,
+                      h3: ({ children }) => <h3 className="text-sm font-bold mb-1 mt-2">{children}</h3>,
+                      code: ({ node, inline, className, children, ...props }: any) => {
+                        const match = /language-(\w+)/.exec(className || '');
+                        return !inline ? (
+                          <div className="relative my-4 rounded-lg bg-slate-900 p-4 font-mono text-xs text-slate-50 overflow-x-auto">
+                            <code className={className} {...props}>
+                              {children}
+                            </code>
+                          </div>
+                        ) : (
+                          <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-xs text-slate-900 dark:bg-slate-800 dark:text-slate-100" {...props}>
+                            {children}
+                          </code>
+                        );
+                      },
+                      table: ({ children }) => (
+                        <div className="my-4 w-full overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
+                          <table className="w-full text-sm text-left">{children}</table>
+                        </div>
+                      ),
+                      thead: ({ children }) => <thead className="bg-slate-50 dark:bg-slate-800/50">{children}</thead>,
+                      tbody: ({ children }) => <tbody className="divide-y divide-slate-200 dark:divide-slate-700">{children}</tbody>,
+                      tr: ({ children }) => <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">{children}</tr>,
+                      th: ({ children }) => <th className="px-4 py-2 font-semibold text-slate-900 dark:text-slate-100">{children}</th>,
+                      td: ({ children }) => <td className="px-4 py-2">{children}</td>,
+                      blockquote: ({ children }) => <blockquote className="border-l-4 border-indigo-500 pl-4 italic my-2 text-gray-700 dark:text-gray-300">{children}</blockquote>,
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
                 </div>
 
                 {/* Message metadata and actions */}
@@ -586,7 +851,7 @@ export default function InputForm({
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Share a dream, feeling, or thought stirring within..."
+                placeholder="What&apos;s on your mind? Share a dream, feeling, or thought..."
                 className="resize-none border-indigo-200 !text-sm sm:!text-base focus:border-indigo-400 focus:ring-indigo-400/20 pr-10 sm:pr-12 dark:border-indigo-700 dark:bg-slate-800 dark:text-gray-100 dark:placeholder-gray-400 overflow-hidden min-h-[44px]"
                 disabled={isPending || (creditInfo?.remaining ?? 0) === 0}
                 onKeyDown={(e) => {
@@ -820,23 +1085,6 @@ export default function InputForm({
               {/* Right Area: Action Buttons */}
               {messages.length > 0 && (
                 <div className="flex gap-2 flex-shrink-0">
-                  <HybridTooltip
-                    content={
-                      <div className="space-y-2">
-                        <p className="font-medium">Session Token Usage</p>
-                        <p className="text-sm">
-                          This shows tokens used in your current chat session.
-                          Each message consumes tokens based on its length.
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Max 10,000 tokens per session
-                        </p>
-                      </div>
-                    }
-                  >
-                    <TokenMeter />
-                  </HybridTooltip>
-
                   <Button
                     onClick={clearConversation}
                     size="sm"
@@ -880,14 +1128,10 @@ export default function InputForm({
                   </Button>
                 </div>
               )}
-
             </div>
           </form>
         </div>
-
       </div>
-
-
     </div>
   );
 }

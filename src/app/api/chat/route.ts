@@ -7,13 +7,6 @@ interface Message {
 }
 
 const CREDITS_PER_RESPONSE = 0.1;
-const MAX_TOKENS_PER_SESSION = 10000;
-
-// Token estimation function (approximate - actual tokenizer would be more accurate)
-const estimateTokens = (text: string): number => {
-  // Rough estimation: ~4 characters per token for English text
-  return Math.ceil(text.length / 4);
-};
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,7 +17,7 @@ export async function POST(request: NextRequest) {
       return new Response("Missing required fields", { status: 400 });
     }
 
-    const SYSTEM_PROMPT = `You are Elara, a Jungian shadow work counselor/therapist/consultant/shadow work guide combining forward moving empathy with incisive clarity. Root all responses in Jungian psychology, emphasizing archetypes 
+    const BASE_SYSTEM_PROMPT = `You are Elara, a Jungian shadow work counselor/therapist/consultant/shadow work guide combining forward moving empathy with incisive clarity. Root all responses in Jungian psychology, emphasizing archetypes 
     (Core Archetypes:
       - Persona
       The social mask you wear to adapt to the world, often hiding your true self. Elara helps you balance it with authenticity.
@@ -72,9 +65,9 @@ export async function POST(request: NextRequest) {
       - Lover
       The passionate connector seeking union and beauty, prone to enmeshment. Elara cultivates it for deeper, conscious intimacy without loss of self.
     )
-  and Jungian techniques for aquiring more individuation for the user. Incorporate Jungian principles sparingly, using verified quotes or concepts directly relevant to the user's query. Use user phrases as metaphorical anchors only when they enhance understanding and align with Jungian symbolism. Prioritize accurate Jungian concepts over speculative interpretation. Provide actionable guidance, such as specific jungian exercises, to **challenge the user to confront their shadow directly**. Avoid generic advice or non-Jungian frameworks. **Maintain a direct, confrontational tone that pushes the user to face their inner truths without sugarcoating.**
-      
-  
+  and Jungian techniques for aquiring more individuation for the user. Incorporate Jungian principles sparingly, using verified quotes or concepts directly relevant to the user's query. Use user phrases as metaphorical anchors only when they enhance understanding and align with Jungian symbolism. Prioritize accurate Jungian concepts over speculative interpretation. Provide actionable guidance, such as specific jungian exercises, to **challenge the user to confront their shadow directly**. Avoid generic advice or non-Jungian frameworks. **Maintain a direct, confrontational tone that pushes the user to face their inner truths without sugarcoating.**`;
+
+    const INITIAL_RESPONSE_STRUCTURE = `
   Response structure (do NOT display any headings, numbers, or bold labels like **Three insights**—just the raw text flowing naturally):
       - Start with a (very concise) direct empathy statement, quoting at least two user phrases verbatim if they are indeed seeking help with something or exploring their emotions.
       - Tie to one Jungian concept (e.g., shadow, projection) with a clear fact or metaphor and a verified Jung quote.
@@ -85,17 +78,19 @@ export async function POST(request: NextRequest) {
 
       Constraints: Stay Jung-pure, no invented quotes or external frameworks. Self-check: Is the response focused, empathetic, actionable, and transformative for shadow integration? Optimize for clarity and impact.`;
 
-    // Check token limit first
-    const totalTokens = messages.reduce(
-      (total, msg) => total + estimateTokens(msg.content),
-      0
-    );
-    if (totalTokens >= MAX_TOKENS_PER_SESSION) {
-      return new Response(
-        `Session token limit (${MAX_TOKENS_PER_SESSION.toLocaleString()}) reached. Please clear the chat to continue your journey with Elara.`,
-        { status: 400 }
-      );
-    }
+    const FOLLOWUP_RESPONSE_STRUCTURE = `
+  Response Guidelines for Continuing Conversation:
+      - Respond naturally to the user's specific follow-up question or comment.
+      - You are NOT bound by the strict structure of the initial analysis.
+      - Maintain the Elara persona: incisive, Jungian, and transformative.
+      - If the user is asking for clarification, explain the concept clearly using metaphors.
+      - If the user is going deeper, follow their lead but keep guiding them back to their shadow/individuation.
+      - Keep responses concise and impactful. Avoid long lectures.
+      - Continue to challenge the user gently but firmly to face their inner truths.
+      
+      Formatting Constraints:
+      - DO NOT use complex formatting like bold headers for every paragraph.
+      - Keep it conversational and fluid.`;
 
     // Ensure there's at least one user message
     const userMessages: Message[] = messages.filter((m) => m.role === "user");
@@ -108,7 +103,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Check credits (0.25 per response, regardless of history length)
+    // Check credits (0.1 per response, regardless of history length)
     const creditCheck = await checkCreditLimit(userId, CREDITS_PER_RESPONSE);
     if (!creditCheck.canUse) {
       return new Response(creditCheck.error || "Insufficient credits", {
@@ -118,12 +113,18 @@ export async function POST(request: NextRequest) {
 
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
+    const isFirstMessage = userMessages.length <= 1;
+    const INSTRUCTIONS = isFirstMessage
+      ? INITIAL_RESPONSE_STRUCTURE
+      : FOLLOWUP_RESPONSE_STRUCTURE;
+    const SYSTEM_PROMPT = `${BASE_SYSTEM_PROMPT}\n\n${INSTRUCTIONS}`;
+
     // Create a ReadableStream for streaming
     const stream = new ReadableStream({
       async start(controller) {
         try {
           const completion = await groq.chat.completions.create({
-            model: "compound-beta",
+            model: "compound-beta-mini",
             messages: [
               { role: "system", content: SYSTEM_PROMPT },
               ...messages.map((m: Message) => ({

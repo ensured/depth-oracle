@@ -97,7 +97,7 @@ export function QuoteToast() {
     } else {
       toast.dismiss();
     }
-  }, [isToggled]);
+  }, [isToggled, quoteInterval]);
 
   return (
     <TooltipProvider>

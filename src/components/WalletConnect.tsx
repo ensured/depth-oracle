@@ -2,6 +2,7 @@
 import { useCardano } from "@cardano-foundation/cardano-connect-with-wallet";
 import { NetworkType } from "@cardano-foundation/cardano-connect-with-wallet-core";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export default function WalletConnect() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -76,8 +77,16 @@ export default function WalletConnect() {
                     key={provider}
                     className="w-full px-4 py-2.5 bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 rounded-md border border-zinc-700/50 flex items-center justify-between transition-all text-sm font-medium focus:outline-none focus:ring-1 focus:ring-zinc-500/30"
                     onClick={() => {
-                      connect(provider);
-                      setIsModalOpen(false);
+                      connect(
+                        provider,
+                        () => {
+                          toast.success("Wallet connected successfully");
+                          setIsModalOpen(false);
+                        },
+                        (error) => {
+                          toast.error(error.toString());
+                        }
+                      );
                     }}
                   >
                     <span className="capitalize">
