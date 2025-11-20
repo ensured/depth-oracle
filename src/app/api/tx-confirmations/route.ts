@@ -55,10 +55,6 @@ export async function GET(request: NextRequest) {
 
     const txData = (await response.json()) as KoiosTxStatus[];
 
-    // Check if transaction is found and confirmed
-    // Koios returns an array of objects: [{ tx_hash: "...", num_confirmations: 123 }]
-    // If tx is not found on chain yet, it might not be in the list or have 0 confirmations.
-
     const txInfo = txData.find((t) => t.tx_hash === txHash);
     const confirmations = txInfo?.num_confirmations || 0;
 
