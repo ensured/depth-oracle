@@ -12,11 +12,11 @@ import { HybridTooltip } from "@/components/HybridTooltip";
 
 
 interface TransactionBuilderProps {
-  tokensRemaining: number;
+  creditsRemaining: number;
   onTransactionSuccess?: () => void;
 }
 
-export default function TransactionBuilder({ tokensRemaining, onTransactionSuccess }: TransactionBuilderProps) {
+export default function TransactionBuilder({ creditsRemaining, onTransactionSuccess }: TransactionBuilderProps) {
   const [txHash, setTxHash] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -177,8 +177,8 @@ export default function TransactionBuilder({ tokensRemaining, onTransactionSucce
   return (
     <div className="px-5 py-4 space-y-4">
       {/* Main action button */}
-      {tokensRemaining > 0 ? (
-        <button className="text-zinc-100 w-full py-2.5 rounded-md text-xs font-medium transition-all bg-green-900/50 cursor-not-allowed border border-green-900/30">Use remaining tokens before buying more</button>
+      {creditsRemaining > 0 ? (
+        <button className="text-zinc-100 w-full py-2.5 rounded-md text-xs font-medium transition-all bg-green-900/50 cursor-not-allowed border border-green-900/30">Use remaining {creditsRemaining} credits before buying more</button>
       ) : (
         <button
           className={`text-zinc-100 w-full py-2.5 rounded-md text-xs font-medium transition-all focus:outline-none focus:ring-1 ${isLoading

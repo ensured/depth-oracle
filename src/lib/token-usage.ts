@@ -20,6 +20,13 @@ export interface PlanLimits {
 }
 
 /**
+ * Helper function to round to 1 decimal place consistently
+ */
+function roundToOneDecimal(num: number): number {
+  return Math.round(num * 10) / 10;
+}
+
+/**
  * Get plan limits configuration
  */
 export async function getPlanLimitsConfig(): Promise<PlanLimits> {
@@ -45,7 +52,11 @@ export async function getOrCreateCreditUsage(
       .single();
 
     if (existingRecord && !fetchError) {
-      return existingRecord as CreditUsage;
+      // Ensure credits_used is properly rounded when retrieved
+      return {
+        ...existingRecord,
+        credits_used: roundToOneDecimal(existingRecord.credits_used),
+      } as CreditUsage;
     }
 
     // If no record exists, create one
@@ -80,7 +91,7 @@ export async function getOrCreateCreditUsage(
  */
 export async function checkCreditLimit(
   userId: string,
-  creditsNeeded: number = 100
+  creditsNeeded: number = 0.1
 ): Promise<{
   canUse: boolean;
   remainingCredits: number;
@@ -132,9 +143,8 @@ export async function checkCreditLimit(
       };
     }
 
-    const remainingCredits = Math.max(
-      0,
-      planLimit.tokens - tokenUsage.credits_used
+    const remainingCredits = roundToOneDecimal(
+      Math.max(0, planLimit.tokens - tokenUsage.credits_used)
     );
 
     if (remainingCredits < creditsNeeded) {
@@ -167,7 +177,7 @@ export async function checkCreditLimit(
  */
 export async function deductCredits(
   userId: string,
-  creditsUsed: number
+  creditsUsed: number = 0.1
 ): Promise<{
   success: boolean;
   error?: string;
@@ -176,18 +186,19 @@ export async function deductCredits(
     const tokenUsage = await getOrCreateCreditUsage(userId);
     const planLimits = await getPlanLimitsConfig();
 
-    // Convert to integer to avoid floating point precision issues
-    const currentCredits = Math.round(tokenUsage.credits_used * 10);
-    const creditsToDeduct = Math.round(creditsUsed * 10);
+    // Round both values to 1 decimal place before calculation
+    const currentCredits = roundToOneDecimal(tokenUsage.credits_used);
+    const creditsToDeduct = roundToOneDecimal(creditsUsed);
 
-    let newCreditsUsed = Math.max(0, (currentCredits + creditsToDeduct) / 10);
+    // Calculate new credits used and round the result
+    let newCreditsUsed = roundToOneDecimal(currentCredits + creditsToDeduct);
     let newPlan = tokenUsage.plan;
     let newResetDate = tokenUsage.reset_date;
 
     // Check if we need to downgrade from pro to free
     if (tokenUsage.plan === "pro") {
       const proLimit = planLimits.pro.tokens;
-      const remaining = Math.max(0, proLimit - newCreditsUsed);
+      const remaining = roundToOneDecimal(proLimit - newCreditsUsed);
 
       // If they drop below 5 tokens (the free tier limit), downgrade them immediately
       // This ensures they always have at least the free monthly allowance
@@ -204,7 +215,7 @@ export async function deductCredits(
     const { error } = await supabase
       .from("token_usage")
       .update({
-        credits_used: newCreditsUsed, // Store as decimal with 1 digit precision
+        credits_used: newCreditsUsed,
         plan: newPlan,
         reset_date: newResetDate,
         updated_at: new Date().toISOString(),
@@ -246,10 +257,11 @@ export async function getCreditUsageInfo(userId: string): Promise<{
 
     const planLimit = planLimits[tokenUsage.plan as keyof PlanLimits];
     const totalCredits = planLimit.tokens;
-    // Ensure we're working with numbers rounded to 1 decimal place
-    const usedCredits = parseFloat(tokenUsage.credits_used.toFixed(1));
-    const remainingCredits = parseFloat(
-      Math.max(0, totalCredits - usedCredits).toFixed(1)
+
+    // Use our helper function for consistent rounding
+    const usedCredits = roundToOneDecimal(tokenUsage.credits_used);
+    const remainingCredits = roundToOneDecimal(
+      Math.max(0, totalCredits - usedCredits)
     );
     const percentageUsed = Math.min(
       100,
@@ -269,8 +281,8 @@ export async function getCreditUsageInfo(userId: string): Promise<{
     // Return default values on error
     return {
       used: 0,
-      remaining: 5000,
-      total: 5000,
+      remaining: 5,
+      total: 5,
       plan: "free",
       percentageUsed: 0,
     };
@@ -301,7 +313,7 @@ export async function updateUserPlan(
       const currentPercentage =
         tokenUsage.credits_used /
         planLimits[tokenUsage.plan as keyof PlanLimits].tokens;
-      newTokensUsed = Math.floor(newLimit * currentPercentage);
+      newTokensUsed = roundToOneDecimal(newLimit * currentPercentage);
     }
 
     // Calculate next reset date
@@ -347,14 +359,19 @@ export async function addCredits(
   try {
     const tokenUsage = await getOrCreateCreditUsage(userId);
 
-    // Convert to integer to avoid floating point precision issues
-    const currentCredits = Math.round(tokenUsage.credits_used * 10);
-    const creditsToAddRounded = Math.round(creditsToAdd * 10);
+    // Round both values before calculation
+    const currentCredits = roundToOneDecimal(tokenUsage.credits_used);
+    const creditsToAddRounded = roundToOneDecimal(creditsToAdd);
+
+    // Calculate new credits and ensure it's rounded
+    const newCreditsUsed = roundToOneDecimal(
+      Math.max(0, currentCredits - creditsToAddRounded)
+    );
 
     const { error } = await supabase
       .from("token_usage")
       .update({
-        credits_used: Math.max(0, (currentCredits - creditsToAddRounded) / 10), // Store as decimal with 1 digit precision
+        credits_used: newCreditsUsed,
         plan: "pro", // Upgrade to pro when adding credits
         updated_at: new Date().toISOString(),
       })
@@ -393,11 +410,11 @@ export async function getUsageStats(): Promise<{
     }
 
     const totalUsers = allUsage.length;
-    const totalTokensUsed = allUsage.reduce(
-      (sum, record) => sum + record.credits_used,
-      0
+    const totalTokensUsed = roundToOneDecimal(
+      allUsage.reduce((sum, record) => sum + record.credits_used, 0)
     );
-    const averageUsage = totalUsers > 0 ? totalTokensUsed / totalUsers : 0;
+    const averageUsage =
+      totalUsers > 0 ? roundToOneDecimal(totalTokensUsed / totalUsers) : 0;
 
     const planDistribution = allUsage.reduce((acc, record) => {
       acc[record.plan] = (acc[record.plan] || 0) + 1;
@@ -407,7 +424,7 @@ export async function getUsageStats(): Promise<{
     return {
       totalUsers,
       totalTokensUsed,
-      averageUsage: Math.round(averageUsage),
+      averageUsage,
       planDistribution,
     };
   } catch (error) {

@@ -9,7 +9,8 @@ import Link from "next/link";
 import { GradientText } from "./ui/shadcn-io/gradient-text";
 import FeedbackButton from "./FeedbackButton";
 import { QuoteToast } from "./QuoteToast";
-
+import ogImage from "../../public/og-image-transparent.png";
+import Image from "next/image";
 export function Header() {
   const { user, isLoaded } = useUser();
 
@@ -18,7 +19,8 @@ export function Header() {
       <header className="sticky top-0 z-50 w-full border-b border-border backdrop-blur dark:bg-background/60 bg-accent">
         <div className=" flex h-14 items-center justify-between px-3 sm:px-4 md:px-5 lg:px-6 xl:px-7">
           <div className="flex items-center space-x-2 select-none">
-            <Link href="/" className="hover:underline">
+            <Link href="/" className="hover:underline flex items-center gap-1">
+
               <GradientText
                 transition={{
                   duration: 6,
@@ -38,10 +40,11 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border backdrop-blur dark:bg-background/60 bg-accent">
+    <header className="sticky top-0 z-50 w-full border-b border-border backdrop-blur bg-background/80">
       <div className=" flex px-3 sm:px-4 md:px-5 lg:px-6 xl:px-7 h-14 items-center justify-between">
         <div className="flex items-center gap-1 select-none">
-          <Link href="/" className="hover:underline">
+          <Link href="/" className="hover:underline flex items-center gap-1">
+
             <GradientText
               transition={{
                 duration: 6,

@@ -9,7 +9,7 @@ import { getCreditUsageInfo } from "@/lib/token-usage";
 export default function Main() {
   const { user } = useUser();
   const [showWalletModal, setShowWalletModal] = useState(false);
-  const [tokenInfo, setTokenInfo] = useState<{
+  const [creditInfo, setCreditInfo] = useState<{
     used: number;
     remaining: number;
     total: number;
@@ -18,13 +18,13 @@ export default function Main() {
     percentageUsed: number;
   } | null>(null);
 
-  const fetchTokenInfo = async () => {
+  const fetchCreditInfo = async () => {
     if (user?.id) {
       try {
         const info = await getCreditUsageInfo(user.id);
-        setTokenInfo(info);
+        setCreditInfo(info);
       } catch (error) {
-        console.error("Failed to fetch token info:", error);
+        console.error("Failed to fetch credit info:", error);
       }
     }
   };
@@ -33,7 +33,7 @@ export default function Main() {
     if (!user?.id) {
       return;
     }
-    fetchTokenInfo();
+    fetchCreditInfo();
   }, [user?.id]);
 
   if (!user) {
@@ -44,15 +44,15 @@ export default function Main() {
     <div className="w-full h-full">
       <InputForm
         userId={user.id}
-        tokenInfo={tokenInfo}
-        onCreditsUsed={fetchTokenInfo}
+        creditInfo={creditInfo}
+        onCreditsUsed={fetchCreditInfo}
         onOpenPricing={() => setShowWalletModal(true)}
       />
       <WalletCreditsModal
         open={showWalletModal}
         onOpenChange={setShowWalletModal}
-        tokenInfo={tokenInfo}
-        onSuccess={fetchTokenInfo}
+        creditInfo={creditInfo}
+        onSuccess={fetchCreditInfo}
       />
     </div>
   );

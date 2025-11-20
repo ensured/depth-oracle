@@ -42,12 +42,12 @@ type Message = {
 export default function InputForm({
   userId,
   onCreditsUsed,
-  tokenInfo,
+  creditInfo,
   onOpenPricing,
 }: {
   userId: string;
   onCreditsUsed?: () => Promise<void>;
-  tokenInfo: {
+  creditInfo: {
     used: number;
     remaining: number;
     total: number;
@@ -230,12 +230,12 @@ export default function InputForm({
 
   // New: Credits Meter Component
   const CreditsMeter = () => {
-    if (!tokenInfo) return null;
+    if (!creditInfo) return null;
 
     const getStatusColor = () => {
-      if (tokenInfo.percentageUsed < 32) return "bg-green-500/95";
-      if (tokenInfo.percentageUsed < 56) return "bg-yellow-500/95";
-      if (tokenInfo.percentageUsed < 76) return "bg-orange-500/95";
+      if (creditInfo.percentageUsed < 32) return "bg-green-500/95";
+      if (creditInfo.percentageUsed < 56) return "bg-yellow-500/95";
+      if (creditInfo.percentageUsed < 76) return "bg-orange-500/95";
       return "bg-red-500/95";
     };
 
@@ -249,23 +249,23 @@ export default function InputForm({
             <span className="font-medium text-muted-foreground truncate">
               {animateCredits ? (
                 <RollingText
-                  key={`credits-${tokenInfo.remaining}`}
-                  text={`${tokenInfo.remaining}`}
+                  key={`credits-${creditInfo.remaining}`}
+                  text={`${creditInfo.remaining}`}
                 />
               ) : (
-                `${tokenInfo.remaining}`
+                `${creditInfo.remaining}`
               )}{" "}
               credits left
             </span>
           </div>
           <span className="text-xs text-muted-foreground sm:ml-2 md:ml-4 lg:ml-6 truncate">
-            {tokenInfo.plan} plan
+            {creditInfo.plan} plan
           </span>
         </div>
         <div className="mt-2 h-1.5 sm:h-2 w-full rounded-full  dark:bg-gray-700">
           <div
             className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${getStatusColor()}`}
-            style={{ width: `${tokenInfo.percentageUsed}%` }}
+            style={{ width: `${creditInfo.percentageUsed}%` }}
           ></div>
         </div>
         {onOpenPricing && (
@@ -333,13 +333,13 @@ export default function InputForm({
 
   // Animate credits when they change
   useEffect(() => {
-    if (tokenInfo) {
+    if (creditInfo) {
       if (prevRemaining.current === undefined) {
         // First time setting tokenInfo, just record it without animating
-        prevRemaining.current = tokenInfo.remaining;
-      } else if (tokenInfo.remaining !== prevRemaining.current) {
+        prevRemaining.current = creditInfo.remaining;
+      } else if (creditInfo.remaining !== prevRemaining.current) {
         // Actual change, animate
-        prevRemaining.current = tokenInfo.remaining;
+        prevRemaining.current = creditInfo.remaining;
         setAnimateCredits(true);
         const timer = setTimeout(() => {
           setAnimateCredits(false);
@@ -347,7 +347,7 @@ export default function InputForm({
         return () => clearTimeout(timer);
       }
     }
-  }, [tokenInfo?.remaining]);
+  }, [creditInfo?.remaining]);
 
   return (
     <div className="mx-auto w-full">
@@ -515,13 +515,80 @@ export default function InputForm({
         <div className="border-t border-gray-200/50 p-3 sm:p-6 dark:border-gray-700/50">
           <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
             <div className="relative">
+              {/* Error Display */}
+              {error && (
+                <div
+                  className={`mt-4 mb-2 rounded-xl border p-4 ${error.includes("credits") || error.includes("Credit")
+                    ? "bg-orange-50 border-orange-200 text-orange-800 dark:bg-orange-900/20 dark:border-orange-700 dark:text-orange-300"
+                    : "border-red-200 bg-red-50 text-red-800 dark:bg-red-900/20 dark:border-red-700 dark:text-red-300"
+                    }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      {error.includes("credits") || error.includes("Credit") ? (
+                        <>
+                          {error}{" "}
+                          <button
+                            onClick={() => {
+                              onOpenPricing?.();
+                              // Scroll to pricing section after a short delay to ensure component is rendered
+                              setTimeout(() => {
+                                const pricingElement =
+                                  document.getElementById("pricing");
+                                if (pricingElement) {
+                                  pricingElement.scrollIntoView({ behavior: "smooth" });
+                                }
+                              }, 100);
+                            }}
+                            className="font-semibold underline hover:text-orange-900 dark:hover:text-orange-200"
+                          >
+                            Upgrade or top up
+                          </button>
+                        </>
+                      ) : (
+                        error
+                      )}
+                    </div>
+
+                    {!error.includes("credits") &&
+                      !error.includes("Credit") &&
+                      !error.includes("token limit") &&
+                      retryMessage && (
+                        <Button
+                          onClick={retryLastMessage}
+                          size="sm"
+                          variant="outline"
+                          className="ml-4 border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-900/20"
+                        >
+                          Retry
+                        </Button>
+                      )}
+
+                    {!error.includes("credits") &&
+                      !error.includes("Credit") &&
+                      error.includes("token limit") && (
+                        <Button
+                          onClick={() => {
+                            clearConversation();
+                            setError("");
+                          }}
+                          size="sm"
+                          variant="outline"
+                          className="ml-4 border-orange-300 text-orange-600 hover:bg-orange-50 dark:border-orange-600 dark:text-orange-400 dark:hover:bg-orange-900/20"
+                        >
+                          Reset Chat
+                        </Button>
+                      )}
+                  </div>
+                </div>
+              )}
               <Textarea
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Share a dream, feeling, or thought stirring within..."
                 className="resize-none border-indigo-200 !text-sm sm:!text-base focus:border-indigo-400 focus:ring-indigo-400/20 pr-10 sm:pr-12 dark:border-indigo-700 dark:bg-slate-800 dark:text-gray-100 dark:placeholder-gray-400 overflow-hidden min-h-[44px]"
-                disabled={isPending || (tokenInfo?.remaining ?? 0) === 0}
+                disabled={isPending || (creditInfo?.remaining ?? 0) === 0}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -536,7 +603,7 @@ export default function InputForm({
                 disabled={
                   isPending ||
                   !input.trim() ||
-                  (tokenInfo?.remaining ?? 0) === 0
+                  (creditInfo?.remaining ?? 0) === 0
                 }
                 size="sm"
                 className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 h-7 w-7 sm:h-8 sm:w-8 rounded-full p-0 cursor-pointer"
@@ -747,6 +814,7 @@ export default function InputForm({
                     </DialogContent>
                   </Dialog>
                 </div>
+
               </div>
 
               {/* Right Area: Action Buttons */}
@@ -812,78 +880,14 @@ export default function InputForm({
                   </Button>
                 </div>
               )}
+
             </div>
           </form>
         </div>
+
       </div>
 
-      {/* Error Display */}
-      {error && (
-        <div
-          className={`mt-4 rounded-xl border p-4 ${error.includes("credits") || error.includes("Credit")
-            ? "bg-orange-50 border-orange-200 text-orange-800 dark:bg-orange-900/20 dark:border-orange-700 dark:text-orange-300"
-            : "border-red-200 bg-red-50 text-red-800 dark:bg-red-900/20 dark:border-red-700 dark:text-red-300"
-            }`}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              {error.includes("credits") || error.includes("Credit") ? (
-                <>
-                  {error}{" "}
-                  <button
-                    onClick={() => {
-                      onOpenPricing?.();
-                      // Scroll to pricing section after a short delay to ensure component is rendered
-                      setTimeout(() => {
-                        const pricingElement =
-                          document.getElementById("pricing");
-                        if (pricingElement) {
-                          pricingElement.scrollIntoView({ behavior: "smooth" });
-                        }
-                      }, 100);
-                    }}
-                    className="font-semibold underline hover:text-orange-900 dark:hover:text-orange-200"
-                  >
-                    Upgrade or top up
-                  </button>
-                </>
-              ) : (
-                error
-              )}
-            </div>
 
-            {!error.includes("credits") &&
-              !error.includes("Credit") &&
-              !error.includes("token limit") &&
-              retryMessage && (
-                <Button
-                  onClick={retryLastMessage}
-                  size="sm"
-                  variant="outline"
-                  className="ml-4 border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-900/20"
-                >
-                  Retry
-                </Button>
-              )}
-
-            {!error.includes("credits") &&
-              !error.includes("Credit") &&
-              error.includes("token limit") && (
-                <Button
-                  onClick={() => {
-                    clearConversation();
-                    setError("");
-                  }}
-                  size="sm"
-                  variant="outline"
-                  className="ml-4 border-orange-300 text-orange-600 hover:bg-orange-50 dark:border-orange-600 dark:text-orange-400 dark:hover:bg-orange-900/20"
-                >
-                  Reset Chat
-                </Button>
-              )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
