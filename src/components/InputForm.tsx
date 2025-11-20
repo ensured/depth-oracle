@@ -697,8 +697,7 @@ export default function InputForm({
                       h1: ({ children }) => <h1 className="text-lg font-bold mb-2 mt-4">{children}</h1>,
                       h2: ({ children }) => <h2 className="text-base font-bold mb-2 mt-3">{children}</h2>,
                       h3: ({ children }) => <h3 className="text-sm font-bold mb-1 mt-2">{children}</h3>,
-                      code: ({ node, inline, className, children, ...props }: any) => {
-                        const match = /language-(\w+)/.exec(className || '');
+                      code: ({ inline, className, children, ...props }: any) => {
                         return !inline ? (
                           <div className="relative my-4 rounded-lg bg-slate-900 p-4 font-mono text-xs text-slate-50 overflow-x-auto">
                             <code className={className} {...props}>
