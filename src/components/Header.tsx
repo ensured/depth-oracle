@@ -1,19 +1,24 @@
 "use client";
 
-import { UserButton, useUser, SignInButton } from "@clerk/nextjs";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User } from "lucide-react";
 import Link from "next/link";
 import { GradientText } from "./ui/shadcn-io/gradient-text";
 import FeedbackButton from "./FeedbackButton";
 import { QuoteToast } from "./QuoteToast";
+import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+
+const WalletConnect = dynamic(() => import("./WalletConnect"), { ssr: false });
 
 export function Header() {
-  const { user, isLoaded } = useUser();
+  const [isMounted, setIsMounted] = useState(false);
 
-  if (!isLoaded) {
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
     return (
       <header className="sticky top-0 z-50 w-full border-b border-border backdrop-blur dark:bg-background/60 bg-accent">
         <div className=" flex h-14 items-center justify-between px-3 sm:px-4 md:px-5 lg:px-6 xl:px-7">
@@ -58,27 +63,7 @@ export function Header() {
 
         <div className="flex items-center gap-2">
           <QuoteToast />
-
-          {user ? (
-            <div className="flex items-center">
-              <UserButton
-                appearance={{
-                  elements: {
-                    rootBox: "!mr-0 !px-1.5",
-                    avatarBox: "!mr-0",
-                  },
-                }}
-              />
-            </div>
-          ) : (
-            <SignInButton mode="modal">
-              <Button asChild variant="ghost" className="cursor-pointer">
-                <div className="flex items-center">
-                  <User className="!h-5.5 !w-5.5" />
-                </div>
-              </Button>
-            </SignInButton>
-          )}
+          <WalletConnect />
           <FeedbackButton />
           <ThemeToggle />
         </div>

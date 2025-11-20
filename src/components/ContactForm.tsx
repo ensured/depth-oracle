@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +17,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { useUser } from "@clerk/nextjs";
 import { CheckCircle2Icon } from "lucide-react";
 import { GradientText } from "./ui/shadcn-io/gradient-text";
 
@@ -44,7 +43,6 @@ const formSchema = z.object({
 });
 
 export function ContactForm() {
-  const { user } = useUser();
   const [submissions, setSubmissions] = useState<number[]>([]);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -56,14 +54,6 @@ export function ContactForm() {
       message: "",
     },
   });
-
-  // Load name and email FROM CLERKS useUser
-  useEffect(() => {
-    if (user?.id) {
-      form.setValue("name", user.firstName || "");
-      form.setValue("email", user.emailAddresses?.[0]?.emailAddress || "");
-    }
-  }, [user?.id]);
 
   function onSubmit() {
     toast.custom(
@@ -108,7 +98,7 @@ export function ContactForm() {
               <FormItem>
                 <FormLabel>Name</FormLabel>
                 <FormControl>
-                  <Input placeholder={user?.firstName || ""} {...field} />
+                  <Input placeholder="Your Name" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -122,7 +112,7 @@ export function ContactForm() {
                 <FormLabel>Email</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder={user?.emailAddresses[0].emailAddress || ""}
+                    placeholder="your.email@example.com"
                     {...field}
                   />
                 </FormControl>

@@ -38,10 +38,10 @@ export async function getPlanLimitsConfig(): Promise<PlanLimits> {
 }
 
 /**
- * Get or create credit usage record for a user
+ * Get or create credit usage record for a user (identified by wallet stake address)
  */
 export async function getOrCreateCreditUsage(
-  userId: string
+  userId: string // This is the wallet stake address
 ): Promise<CreditUsage> {
   try {
     // First, try to get existing record
@@ -90,7 +90,7 @@ export async function getOrCreateCreditUsage(
  * Check if user has enough credits for an operation
  */
 export async function checkCreditLimit(
-  userId: string,
+  userId: string, // Wallet stake address
   creditsNeeded: number = 0.1
 ): Promise<{
   canUse: boolean;
@@ -176,7 +176,7 @@ export async function checkCreditLimit(
  * Deduct credits from user's usage
  */
 export async function deductCredits(
-  userId: string,
+  userId: string, // Wallet stake address
   creditsUsed: number = 0.1
 ): Promise<{
   success: boolean;
@@ -293,7 +293,7 @@ export async function getCreditUsageInfo(userId: string): Promise<{
  * Update user's plan
  */
 export async function updateUserPlan(
-  userId: string,
+  userId: string, // Wallet stake address
   newPlan: "free" | "pro" | "enterprise"
 ): Promise<{
   success: boolean;
@@ -350,7 +350,7 @@ export async function updateUserPlan(
  * Add credits to user's account (for pay-as-you-go)
  */
 export async function addCredits(
-  userId: string,
+  userId: string, // Wallet stake address
   creditsToAdd: number
 ): Promise<{
   success: boolean;

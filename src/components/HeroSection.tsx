@@ -17,7 +17,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
+import { useCardano } from "@cardano-foundation/cardano-connect-with-wallet";
+import { NetworkType } from "@cardano-foundation/cardano-connect-with-wallet-core";
+import { WalletSelectionModal } from "@/components/WalletSelectionModal";
 import Image from "next/image";
 import ogImage from "../../public/og-image-transparent.png";
 import videojs from "video.js";
@@ -32,6 +34,16 @@ export default function HeroSection({
 }) {
   const width = useWindowWidth();
   const [showWalletModal, setShowWalletModal] = useState(false);
+  const [showWalletConnectModal, setShowWalletConnectModal] = useState(false);
+
+  const network =
+    process.env.NODE_ENV === "development"
+      ? NetworkType.TESTNET
+      : NetworkType.MAINNET;
+
+  const { isConnected } = useCardano({
+    limitNetwork: network,
+  });
 
   const videoJsOptions: Parameters<typeof videojs>[1] = {
     autoplay: true, // Disable autoplay initially
@@ -146,25 +158,24 @@ export default function HeroSection({
           id="go-to-app"
           className="flex mb-11 w-full justify-center gap-4 sm:flex-row flex-col pt-8 items-center"
         >
-          <SignedOut>
-            <SignInButton mode="modal">
+          {!isConnected ? (
+            <>
               <Button
                 variant="outline"
                 size="lg"
                 className="text-lg h-14 w-40 cursor-pointer  bg-gradient-to-r text-white hover:text-white select-none from-indigo-600 to-purple-600 shadow-lg hover:from-indigo-700 hover:to-purple-700 transform transition-all duration-300 hover:scale-105 hover:shadow-xl"
-                onClick={() => setShowInputForm?.(true)}
+                onClick={() => setShowWalletConnectModal(true)}
               >
                 Try for free <span className=" text-base">🚀</span>
               </Button>
-            </SignInButton>
-          </SignedOut>
-          <SignedIn>
+            </>
+          ) : (
             <div className="flex flex-col sm:flex-row gap-4 items-center">
               <Button
                 variant="outline"
                 size="lg"
                 className="text-lg h-14 w-40 cursor-pointer  bg-gradient-to-r text-white hover:text-white select-none from-indigo-600 to-purple-600 shadow-lg hover:from-indigo-700 hover:to-purple-700 transform transition-all duration-300 hover:scale-105 hover:shadow-xl"
-                onClick={() => setShowInputForm?.(false)}
+                onClick={() => setShowInputForm?.(true)}
               >
                 Go to app <span className="text-base">🚀</span>
               </Button>
@@ -179,7 +190,9 @@ export default function HeroSection({
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
               </Button>
             </div>
-          </SignedIn>
+          )}
+
+          <WalletSelectionModal open={showWalletConnectModal} onOpenChange={setShowWalletConnectModal} />
 
           <Dialog>
             <DialogTrigger asChild>

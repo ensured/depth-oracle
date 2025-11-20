@@ -1,13 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useCardano } from "@cardano-foundation/cardano-connect-with-wallet";
+import { NetworkType } from "@cardano-foundation/cardano-connect-with-wallet-core";
+import WalletConnect from "./WalletConnect";
 import InputForm from "./InputForm";
 import { WalletCreditsModal } from "./WalletCreditsModal";
 import { getCreditUsageInfo } from "@/lib/token-usage";
 
 export default function Main() {
-  const { user } = useUser();
+  const network =
+    process.env.NODE_ENV === "development"
+      ? NetworkType.TESTNET
+      : NetworkType.MAINNET;
+
+  const { stakeAddress, isConnected } = useCardano({
+    limitNetwork: network,
+  });
+
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [creditInfo, setCreditInfo] = useState<{
     used: number;
@@ -19,9 +29,9 @@ export default function Main() {
   } | null>(null);
 
   const fetchCreditInfo = async () => {
-    if (user?.id) {
+    if (stakeAddress) {
       try {
-        const info = await getCreditUsageInfo(user.id);
+        const info = await getCreditUsageInfo(stakeAddress);
         setCreditInfo(info);
       } catch (error) {
         console.error("Failed to fetch credit info:", error);
@@ -30,20 +40,32 @@ export default function Main() {
   };
 
   useEffect(() => {
-    if (!user?.id) {
+    if (!stakeAddress) {
       return;
     }
     fetchCreditInfo();
-  }, [user?.id]);
+  }, [stakeAddress]);
 
-  if (!user) {
-    return null;
+  if (!isConnected || !stakeAddress) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6 p-8 text-center">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold tracking-tight">Connect Your Wallet</h2>
+          <p className="text-muted-foreground max-w-md mx-auto">
+            Please connect your Cardano wallet to access the Depth Oracle and manage your credits.
+          </p>
+        </div>
+        <div className="p-4 border rounded-lg bg-card">
+          <WalletConnect />
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="w-full h-full">
       <InputForm
-        userId={user.id}
+        userId={stakeAddress}
         creditInfo={creditInfo}
         onCreditsUsed={fetchCreditInfo}
         onOpenPricing={() => setShowWalletModal(true)}

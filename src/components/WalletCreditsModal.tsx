@@ -12,7 +12,7 @@ import WalletConnect from "./WalletConnect";
 import { NetworkType } from "@cardano-foundation/cardano-connect-with-wallet-core";
 import { useCardano } from "@cardano-foundation/cardano-connect-with-wallet";
 import { useState, useEffect, useCallback } from "react";
-import { useUser } from "@clerk/nextjs";
+
 import { getCreditUsageInfo } from "@/lib/token-usage";
 import { CreditCard, Calendar, Zap, Wallet } from "lucide-react";
 
@@ -34,7 +34,7 @@ interface WalletCreditsModalProps {
 }
 
 export function WalletCreditsModal({ open, onOpenChange, creditInfo: propCreditInfo, onSuccess }: WalletCreditsModalProps) {
-    const { user, isLoaded } = useUser();
+    // const { user, isLoaded } = useUser();
     const [internalCreditInfo, setInternalCreditInfo] = useState<{
         remaining: number;
         plan: string;
@@ -47,20 +47,20 @@ export function WalletCreditsModal({ open, onOpenChange, creditInfo: propCreditI
             : NetworkType.MAINNET;
 
     const [isProcessing, setIsProcessing] = useState(false);
-    const { isConnected } = useCardano({
+    const { isConnected, stakeAddress } = useCardano({
         limitNetwork: network,
     });
 
     const fetchCreditInfo = useCallback(async () => {
-        if (user?.id) {
+        if (stakeAddress) {
             try {
-                const info = await getCreditUsageInfo(user.id);
+                const info = await getCreditUsageInfo(stakeAddress);
                 setInternalCreditInfo(info);
             } catch (error) {
                 console.error("Failed to fetch credit info:", error);
             }
         }
-    }, [user?.id]);
+    }, [stakeAddress]);
 
     useEffect(() => {
         // If prop is provided, don't fetch
@@ -69,10 +69,10 @@ export function WalletCreditsModal({ open, onOpenChange, creditInfo: propCreditI
         // If modal is not open, don't fetch (optimization)
         if (!open) return;
 
-        if (isLoaded) {
+        if (stakeAddress) {
             fetchCreditInfo();
         }
-    }, [isLoaded, propCreditInfo, open, fetchCreditInfo]);
+    }, [stakeAddress, propCreditInfo, open, fetchCreditInfo]);
 
     const handleTransactionSuccess = () => {
         // Call the parent's onSuccess callback if provided
@@ -110,15 +110,15 @@ export function WalletCreditsModal({ open, onOpenChange, creditInfo: propCreditI
                 }}
             >
                 <DialogHeader className="p-6 border-b border-border bg-muted/20">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-primary/10 rounded-full">
-                            <Wallet className="w-6 h-6 text-primary" />
-                        </div>
-                        <div>
+                    <div className="grid grid-cols-[1fr_auto] items-center gap-4">
+                        <div className="space-y-1">
                             <DialogTitle className="text-xl">Wallet & Credits</DialogTitle>
-                            <DialogDescription className="mt-1">
+                            <DialogDescription>
                                 Manage your subscription and credit balance.
                             </DialogDescription>
+                        </div>
+                        <div className={isConnected ? "rounded-lg border border-border bg-card" : ""}>
+                            <WalletConnect />
                         </div>
                     </div>
                 </DialogHeader>
@@ -151,16 +151,9 @@ export function WalletCreditsModal({ open, onOpenChange, creditInfo: propCreditI
                                 </span>
                             </div>
                         </div>
-
                     </div>
 
-                    {/* Wallet Connection */}
-                    <div className="space-y-3">
-                        <h4 className="text-sm font-medium text-foreground/80">Wallet Connection</h4>
-                        <div className={isConnected ? "p-4 rounded-lg border border-border bg-card" : ""}>
-                            <WalletConnect />
-                        </div>
-                    </div>
+
 
                     {/* Transaction Builder */}
                     {isConnected && (

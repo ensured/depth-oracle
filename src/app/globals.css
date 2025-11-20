@@ -111,13 +111,3 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
 }
-
-/* Clerk UserButton margin override */
-.cl-userButton-root,
-.cl-rootBox,
-[data-clerk-component="UserButton"] {
-  margin-right: 0 !important;
-  margin-left: 0 !important;
-  padding-right: 0 !important;
-  padding-left: 0 !important;
-}

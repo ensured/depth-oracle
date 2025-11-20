@@ -30,18 +30,18 @@ export default function TermsOfService() {
               3. Account Responsibilities
             </h3>
             <p>
-              To access certain features, you must create an account using Clerk
-              authentication. You are responsible for:
+              To access certain features, you must connect your Cardano wallet.
+              You are responsible for:
             </p>
             <ul className="list-disc list-inside mb-4">
               <li>
-                Maintaining the confidentiality of your account credentials.
+                Maintaining the security of your wallet and private keys.
               </li>
-              <li>All activities conducted under your account.</li>
-              <li>Not sharing your account with others.</li>
+              <li>All activities conducted under your wallet address.</li>
+              <li>Not sharing your wallet access with others.</li>
             </ul>
             <p>
-              Depth Oracle reserves the right to suspend or terminate accounts
+              Depth Oracle reserves the right to suspend or terminate access
               for misuse or violation of these Terms.
             </p>
           </section>

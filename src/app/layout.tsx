@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { ClerkProvider } from "@clerk/nextjs";
+
 import { ThemeProvider } from "@/lib/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { Header } from "@/components/Header";
@@ -70,30 +70,30 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en" suppressHydrationWarning>
-        <head>
-          <link
-            rel="icon"
-            href="/lucid-evolution-al-red.svg"
-            type="image/svg+xml"
-          />
-        </head>
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
+    // <ClerkProvider>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <link
+          rel="icon"
+          href="/lucid-evolution-al-red.svg"
+          type="image/svg+xml"
+        />
+      </head>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
+      >
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
         >
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <Header />
-            {children}
-            <Toaster />
-          </ThemeProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+          <Header />
+          {children}
+          <Toaster />
+        </ThemeProvider>
+      </body>
+    </html>
+    // </ClerkProvider>
   );
 }

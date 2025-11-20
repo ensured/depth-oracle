@@ -7,7 +7,7 @@ import { Emulator, Lucid } from "@lucid-evolution/lucid";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { useUser } from "@clerk/nextjs";
+
 import { HybridTooltip } from "@/components/HybridTooltip";
 
 
@@ -27,14 +27,14 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasNotifiedRef = useRef(false);
 
-  const { user } = useUser();
+
 
   const network =
     process.env.NODE_ENV === "development"
       ? NetworkType.TESTNET
       : NetworkType.MAINNET;
 
-  const { isConnected, usedAddresses, enabledWallet, accountBalance } = useCardano({
+  const { isConnected, usedAddresses, enabledWallet, accountBalance, stakeAddress } = useCardano({
     limitNetwork: network,
   });
 
@@ -46,7 +46,10 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
   // Poll for transaction confirmations
   useEffect(() => {
     const checkConfirmations = async () => {
-      if (!txHash || hasNotifiedRef.current || !user?.id) return;
+      // Use stakeAddress as the user ID
+      const userId = stakeAddress;
+
+      if (!txHash || hasNotifiedRef.current || !userId) return;
 
       setIsChecking(true);
       // Artificial delay to show "Checking..." state
@@ -54,7 +57,7 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
 
       try {
         const response = await fetch(
-          `/api/tx-confirmations?txHash=${txHash}&userId=${user.id}`
+          `/api/tx-confirmations?txHash=${txHash}&userId=${userId}`
         );
 
         if (response.ok) {
@@ -118,7 +121,7 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
         pollingIntervalRef.current = null;
       }
     };
-  }, [txHash, user?.id, onTransactionSuccess]);
+  }, [txHash, stakeAddress, onTransactionSuccess]);
 
   const handleBuildTransaction = async () => {
     if (!isConnected || !enabledWallet) {
