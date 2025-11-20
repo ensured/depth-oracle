@@ -46,6 +46,7 @@ export function WalletCreditsModal({ open, onOpenChange, creditInfo: propCreditI
             ? NetworkType.TESTNET
             : NetworkType.MAINNET;
 
+    const [isProcessing, setIsProcessing] = useState(false);
     const { isConnected } = useCardano({
         limitNetwork: network,
     });
@@ -83,11 +84,31 @@ export function WalletCreditsModal({ open, onOpenChange, creditInfo: propCreditI
         }
     };
 
+    const handleOpenChange = (newOpen: boolean) => {
+        // Prevent closing if processing
+        if (!newOpen && isProcessing) {
+            return;
+        }
+        onOpenChange(newOpen);
+    };
+
     const displayCreditInfo = propCreditInfo || internalCreditInfo;
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-border bg-background">
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+            <DialogContent
+                className="sm:max-w-[500px] p-0 overflow-hidden border-border bg-background"
+                onInteractOutside={(e) => {
+                    if (isProcessing) {
+                        e.preventDefault();
+                    }
+                }}
+                onEscapeKeyDown={(e) => {
+                    if (isProcessing) {
+                        e.preventDefault();
+                    }
+                }}
+            >
                 <DialogHeader className="p-6 border-b border-border bg-muted/20">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-primary/10 rounded-full">
@@ -146,6 +167,7 @@ export function WalletCreditsModal({ open, onOpenChange, creditInfo: propCreditI
                                 <DynamicTransactionBuilder
                                     creditsRemaining={displayCreditInfo?.remaining || 0}
                                     onTransactionSuccess={handleTransactionSuccess}
+                                    onProcessingChange={setIsProcessing}
                                 />
                             </div>
                         </div>

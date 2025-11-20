@@ -24,43 +24,37 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Determine network and API key
+    // Determine network and API URL
     const isTestnet = process.env.NODE_ENV === "development";
-    const blockfrostApiKey = isTestnet
-      ? process.env.BLOCKFROST_API_KEY_TESTNET
-      : process.env.BLOCKFROST_API_KEY_MAINNET;
-    const blockfrostUrl = isTestnet
-      ? "https://cardano-preprod.blockfrost.io/api/v0"
-      : "https://cardano-mainnet.blockfrost.io/api/v0";
+    const koiosUrl = isTestnet
+      ? "https://preprod.koios.rest/api/v1/tx_status"
+      : "https://api.koios.rest/api/v1/tx_status";
 
-    if (!blockfrostApiKey) {
-      return NextResponse.json(
-        { error: "Blockfrost API key not configured" },
-        { status: 500 }
-      );
-    }
-
-    // Fetch transaction details from Blockfrost (single call)
-    const response = await fetch(`${blockfrostUrl}/txs/${txHash}`, {
+    // Fetch transaction details from Koios
+    const response = await fetch(koiosUrl, {
+      method: "POST",
       headers: {
-        project_id: blockfrostApiKey,
+        Accept: "application/json",
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({
+        _tx_hashes: [txHash],
+      }),
     });
 
     if (!response.ok) {
-      if (response.status === 404) {
-        return NextResponse.json(
-          { error: "Transaction not found", confirmations: 0, credited: false },
-          { status: 404 }
-        );
-      }
-      throw new Error(`Blockfrost API error: ${response.statusText}`);
+      throw new Error(`Koios API error: ${response.statusText}`);
     }
 
     const txData = await response.json();
 
-    // Check if transaction is confirmed
-    const confirmations = txData.block_height ? 1 : 0;
+    // Check if transaction is found and confirmed
+    // Koios returns an array of objects: [{ tx_hash: "...", num_confirmations: 123 }]
+    // If tx is not found on chain yet, it might not be in the list or have 0 confirmations.
+
+    const txInfo = txData.find((t: any) => t.tx_hash === txHash);
+    const confirmations = txInfo?.num_confirmations || 0;
+
     let credited = false;
 
     // If confirmed and not already credited, add credits to user's account
@@ -79,11 +73,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       txHash,
-      blockHeight: txData.block_height,
-      blockHash: txData.block,
       confirmations,
-      slot: txData.slot,
-      index: txData.index,
       credited,
     });
   } catch (error) {

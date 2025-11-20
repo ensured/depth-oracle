@@ -14,9 +14,10 @@ import { HybridTooltip } from "@/components/HybridTooltip";
 interface TransactionBuilderProps {
   creditsRemaining: number;
   onTransactionSuccess?: () => void;
+  onProcessingChange?: (isProcessing: boolean) => void;
 }
 
-export default function TransactionBuilder({ creditsRemaining, onTransactionSuccess }: TransactionBuilderProps) {
+export default function TransactionBuilder({ creditsRemaining, onTransactionSuccess, onProcessingChange }: TransactionBuilderProps) {
   const [txHash, setTxHash] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +37,11 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
   const { isConnected, usedAddresses, enabledWallet, accountBalance } = useCardano({
     limitNetwork: network,
   });
+
+  // Notify parent of processing state changes
+  useEffect(() => {
+    onProcessingChange?.(isLoading || isPolling);
+  }, [isLoading, isPolling, onProcessingChange]);
 
   // Poll for transaction confirmations
   useEffect(() => {
