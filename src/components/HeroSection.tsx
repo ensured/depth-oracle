@@ -159,7 +159,7 @@ export default function HeroSection({
             </SignInButton>
           </SignedOut>
           <SignedIn>
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
               <Button
                 variant="outline"
                 size="lg"
