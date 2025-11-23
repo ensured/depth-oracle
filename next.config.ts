@@ -18,8 +18,15 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
-  env: {
-    // Add any environment variables here if needed
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "i.imgur.com",
+        port: "",
+        pathname: "/**",
+      },
+    ],
   },
   async rewrites() {
     return [

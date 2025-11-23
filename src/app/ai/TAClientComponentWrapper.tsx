@@ -23,7 +23,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Eye, EyeOff, Loader2, MinusCircle, PlusCircle, ChartNoAxesColumn } from "lucide-react";
+import { Eye, EyeOff, Loader2, MinusCircle, PlusCircle } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,

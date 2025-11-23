@@ -4,6 +4,9 @@ import { fetchCandles } from "@/lib/data-fetcher";
 import { calculateIndicators } from "@/lib/ta";
 import { isProSubscribed } from "@/app/ai/actions";
 import Link from "next/link";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
 
 // Revalidate every 5 minutes
 export const revalidate = 300;
@@ -19,9 +22,25 @@ export default async function AIChartPage() {
                     <h1 className="text-3xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
                         Pro Access Required
                     </h1>
+
                     <p className="text-gray-400 mb-8 text-lg">
                         The Real-Time AI Technical Analysis Dashboard is available exclusively to Pro subscribers.
                     </p>
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button className="inline-block px-8 py-4 bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-400 hover:to-orange-500 text-black font-bold rounded-lg transition-all transform hover:scale-105 shadow-lg">
+                                Preview
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="w-100% h-100% flex flex-col items-center justify-center">
+                            <DialogHeader>
+                                <DialogTitle>
+                                    <Image src={"https://i.imgur.com/o2KlQCs.png"} alt="Preview" width={800} height={800} />
+                                </DialogTitle>
+
+                            </DialogHeader>
+                        </DialogContent>
+                    </Dialog>
                     <Link
                         href="/?openCreditsModal=true" // Assuming there is a pricing page, or wherever they upgrade
                         className="inline-block px-8 py-4 bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-400 hover:to-orange-500 text-black font-bold rounded-lg transition-all transform hover:scale-105 shadow-lg"
