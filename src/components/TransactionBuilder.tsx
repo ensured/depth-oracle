@@ -6,10 +6,18 @@ import { useState, useEffect, useRef } from "react";
 import { Emulator, Lucid } from "@lucid-evolution/lucid";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Coins, Wallet } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { HybridTooltip } from "@/components/HybridTooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
+type PaymentMethod = "ADA" | "IAG";
 
 interface TransactionBuilderProps {
   creditsRemaining: number;
@@ -26,6 +34,9 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
   const [isChecking, setIsChecking] = useState(false);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasNotifiedRef = useRef(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("ADA");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [totalIAG, setTotalIAG] = useState<bigint>(0n);
 
   const { user } = useUser();
 
@@ -35,7 +46,7 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
       : NetworkType.MAINNET;
 
   const { isConnected, usedAddresses, enabledWallet, accountBalance } = useCardano({
-    limitNetwork: network,
+    limitNetwork: network
   });
 
   // Notify parent of processing state changes
@@ -120,6 +131,42 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
     };
   }, [txHash, user?.id, onTransactionSuccess]);
 
+  // Check IAG balance when wallet is connected
+  useEffect(() => {
+    const checkIAGBalance = async () => {
+      if (!isConnected || !enabledWallet) {
+        setTotalIAG(0n);
+        return;
+      }
+
+      try {
+        const api = await window.cardano[enabledWallet].enable();
+        const lucid = await Lucid(new Emulator([]), "Mainnet");
+        lucid.selectWallet.fromAPI(api);
+
+        const utxos = await lucid.wallet().getUtxos();
+        const IAG_POLICY_ID = "5d16cc1a177b5d9ba9cfa9793b07e60f1fb70fea1f8aef064415d114";
+        const IAG_ASSET_NAME = "494147"; // "IAG" in hex
+        const IAG_UNIT = IAG_POLICY_ID + IAG_ASSET_NAME;
+
+        let total = 0n;
+        for (const utxo of utxos) {
+          Object.entries(utxo.assets).forEach(([unit, amount]) => {
+            if (unit === IAG_UNIT) {
+              total += amount;
+            }
+          });
+        }
+        setTotalIAG(total);
+      } catch (err) {
+        console.error("Error checking IAG balance:", err);
+        setTotalIAG(0n);
+      }
+    };
+
+    checkIAGBalance();
+  }, [isConnected, enabledWallet]);
+
   const handleBuildTransaction = async () => {
     if (!isConnected || !enabledWallet) {
       setError("Wallet not connected");
@@ -133,26 +180,26 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
     hasNotifiedRef.current = false;
 
     try {
-      // Initialize Lucid with an emulator (will be replaced with actual provider)
-      const lucid = await Lucid(new Emulator([]), "Preprod");
-
-      // Get API from wallet
+      // Get API from wallet first
       const api = await window.cardano[enabledWallet].enable();
 
-      // Select wallet
+      // Initialize Lucid with Mainnet (must match backend network)
+      const lucid = await Lucid(new Emulator([]), "Mainnet");
+
+      // Select wallet - this replaces Emulator with actual wallet provider
       lucid.selectWallet.fromAPI(api);
 
-
-      // if (accountBalance < 5) {
-      //   throw new Error("Not enough ada in wallet");
-      // }
       // Make API request to build transaction
       const response = await fetch("/api/transaction", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ address: usedAddresses[0], walletBalance: accountBalance }),
+        body: JSON.stringify({
+          address: usedAddresses[0],
+          walletBalance: accountBalance,
+          paymentMethod: paymentMethod
+        }),
       });
 
       const { tx, error } = await response.json();
@@ -167,6 +214,7 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
       const txHash = await signedTx.submit();
 
       setTxHash(txHash);
+      setIsDialogOpen(false); // Close dialog on success
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : "Unknown error");
@@ -190,24 +238,12 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
         <button className="text-zinc-100 w-full py-2.5 rounded-md text-xs font-medium transition-all bg-green-900/50 cursor-not-allowed border border-green-900/30">Use remaining {creditsRemaining} credits before buying more</button>
       ) : (
         <button
-          className={`text-zinc-100 w-full py-2.5 rounded-md text-xs font-medium transition-all focus:outline-none focus:ring-1 ${isLoading
-            ? "bg-green-900/50 cursor-not-allowed border border-green-900/30"
-            : "bg-green-900/90 hover:bg-green-800 border border-green-900/60 focus:ring-green-700/30"
-            }`}
-          onClick={handleBuildTransaction}
-          disabled={isLoading || !isConnected}
+          className="text-zinc-100 w-full py-2.5 rounded-md text-xs font-medium transition-all focus:outline-none focus:ring-1 bg-green-900/90 hover:bg-green-800 border border-green-900/60 focus:ring-green-700/30"
+          onClick={() => setIsDialogOpen(true)}
+          disabled={!isConnected}
         >
-          {isLoading ? (
-            <div className="flex items-center space-x-2 w-full justify-center">
-              <span>Processing Transaction</span>
-              <Loader2 className="w-3 h-3 animate-spin" />
-            </div>
-          ) : (
-            "Buy 100 Credits"
-          )
-          }
-        </button >
-
+          Buy 100 Credits
+        </button>
       )}
 
       {/* Error state */}
@@ -267,6 +303,107 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
           </div>
         )
       }
+
+      {/* Payment Method Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Choose Payment Method</DialogTitle>
+            <DialogDescription>
+              Select how you&apos;d like to pay for 100 credits
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-4">
+            {/* ADA Payment Option */}
+            <button
+              onClick={() => setPaymentMethod("ADA")}
+              className={`w-full p-4 rounded-lg border-2 transition-all text-left ${paymentMethod === "ADA"
+                ? "border-green-500 bg-green-500/10"
+                : "border-border hover:border-green-500/50"
+                }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className={`p-2 rounded-lg ${paymentMethod === "ADA" ? "bg-green-500/20" : "bg-muted"
+                    }`}>
+                    <Wallet className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-sm">Pay with ADA</div>
+                    <div className="text-xs text-muted-foreground">
+                      {accountBalance ? `${accountBalance} ADA available` : "Loading..."}
+                    </div>
+                  </div>
+                </div>
+                {paymentMethod === "ADA" && (
+                  <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-white" />
+                  </div>
+                )}
+              </div>
+            </button>
+
+            {/* IAG Payment Option */}
+            <button
+              onClick={() => setPaymentMethod("IAG")}
+              disabled={totalIAG === 0n}
+              className={`w-full p-4 rounded-lg border-2 transition-all text-left ${paymentMethod === "IAG"
+                ? "border-green-500 bg-green-500/10"
+                : totalIAG === 0n
+                  ? "border-border opacity-50 cursor-not-allowed"
+                  : "border-border hover:border-green-500/50"
+                }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className={`p-2 rounded-lg ${paymentMethod === "IAG" ? "bg-green-500/20" : "bg-muted"
+                    }`}>
+                    <Coins className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-sm">Pay with IAG</div>
+                    <div className="text-xs text-muted-foreground">
+                      {totalIAG === 0n
+                        ? "No IAG tokens available"
+                        : `${(Number(totalIAG) / 1_000_000).toFixed(2)} IAG available`
+                      }
+                    </div>
+                  </div>
+                </div>
+                {paymentMethod === "IAG" && (
+                  <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-white" />
+                  </div>
+                )}
+              </div>
+            </button>
+          </div>
+
+          <div className="flex justify-end space-x-2 pt-2">
+            <button
+              onClick={() => setIsDialogOpen(false)}
+              className="px-4 py-2 text-sm rounded-md border border-border hover:bg-muted transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleBuildTransaction}
+              disabled={isLoading}
+              className="px-4 py-2 text-sm rounded-md bg-green-900/90 hover:bg-green-800 border border-green-900/60 text-zinc-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <span>Confirm Purchase</span>
+              )}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div >
   );
 }

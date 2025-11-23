@@ -173,7 +173,7 @@ export function ThreadSelector({
                                     ) : (
                                         <>
                                             <div className="flex items-center justify-between w-full gap-2">
-                                                <div className="flex-1 min-w-0">
+                                                <div className="flex-1 min-w-0 cursor-default">
                                                     <div className="font-medium text-sm truncate">
                                                         {thread.title}
                                                     </div>
@@ -186,7 +186,7 @@ export function ThreadSelector({
                                                 <Button
                                                     size="sm"
                                                     variant="ghost"
-                                                    className="h-7 w-7 p-0 shrink-0 hover:bg-red-100 dark:hover:bg-red-900/30"
+                                                    className="cursor-pointer h-7 w-7 p-0 shrink-0 hover:bg-red-100 dark:hover:bg-red-900/30"
                                                     onClick={e => handleDeleteClick(thread.id, e)}
                                                     title="Delete thread"
                                                 >
