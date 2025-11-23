@@ -332,7 +332,9 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
                   <div>
                     <div className="font-semibold text-sm">Pay with ADA</div>
                     <div className="text-xs text-muted-foreground">
-                      {accountBalance ? `${accountBalance} ADA available` : "Loading..."}
+                      {accountBalance != null
+                        ? `${accountBalance.toLocaleString('en-US', { maximumFractionDigits: 0 })} ADA available`
+                        : "Loading..."}
                     </div>
                   </div>
                 </div>

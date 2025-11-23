@@ -77,7 +77,6 @@ export default async function handler(
         .complete();
     }
 
-    // Return the transaction CBOR for the client to sign and submit
     return res.status(200).json({ tx: tx.toCBOR(), error: null });
   } catch (error) {
     let jsonError = JSON.stringify(error);
