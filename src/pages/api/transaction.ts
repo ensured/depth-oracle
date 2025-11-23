@@ -4,12 +4,60 @@ import { NextApiRequest, NextApiResponse } from "next";
 const paymentAddress = process.env.PAYMENT_ADDRESS;
 const PreprodAddress =
   "addr_test1qrl6f3gm0uph6vscjqs900yakynas5eu6puzcrua3kyt6q83uu458738004pap9qr9f3tmnck5y3pt9xcwyv58p7fsvsw570xn";
+const COINGECKO_API_KEY = process.env.NEXT_PUBLIC_COINGECKO_API_KEY || "";
 
 // Validate that PAYMENT_ADDRESS is set for production
 if (process.env.NODE_ENV === "production" && !paymentAddress) {
   throw new Error(
     "PAYMENT_ADDRESS environment variable is required for production"
   );
+}
+
+// Fetch IAG token price in ADA from CoinGecko (Free API)
+async function getIAGPriceInAda(): Promise<number | null> {
+  try {
+    // Get both IAG and ADA prices in USD, then calculate the ratio
+    const response = await fetch(
+      "https://api.coingecko.com/api/v3/simple/price?ids=iagon,cardano&vs_currencies=usd",
+      {
+        headers: { "x-cg-demo-api-key": COINGECKO_API_KEY },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `CoinGecko API error: ${response.status} ${response.statusText}`
+      );
+    }
+
+    const data = await response.json();
+    const iagPriceUSD = data?.iagon?.usd;
+    const adaPriceUSD = data?.cardano?.usd;
+
+    if (
+      !iagPriceUSD ||
+      !adaPriceUSD ||
+      typeof iagPriceUSD !== "number" ||
+      typeof adaPriceUSD !== "number"
+    ) {
+      throw new Error("Invalid price data from CoinGecko");
+    }
+
+    // Calculate IAG price in ADA terms
+    const iagPriceInAda = iagPriceUSD / adaPriceUSD;
+
+    console.log(
+      `CoinGecko: IAG=$${iagPriceUSD}, ADA=$${adaPriceUSD}, IAG/ADA=${iagPriceInAda.toFixed(
+        4
+      )}`
+    );
+
+    return iagPriceInAda;
+  } catch (error) {
+    console.error("Error fetching IAG price from CoinGecko:", error);
+    // Fallback to a recent price if API fails
+    return null;
+  }
 }
 
 // Initialize Lucid based on environment
@@ -53,15 +101,38 @@ export default async function handler(
 
     // Build transaction based on payment method
     let tx;
+
     if (paymentMethod === "IAG") {
-      // Pay with IAG tokens (equivalent to 5 ADA worth)
+      // Fetch current IAG price from CoinGecko
+      const currentIagPriceInAda = await getIAGPriceInAda();
+      if (!currentIagPriceInAda) {
+        return res.status(200).json({
+          tx: null,
+          error: "Failed to get IAG price from CoinGecko",
+        });
+      }
+      const adaAmount = 5; // 5 ADA worth of credits
+
+      // Convert to micro-units (multiply by 1,000,000) and do BigInt math
+      // iagTokens (in micro-units) = (adaAmount / iagPriceInAda) * 1,000,000
+      // = (adaAmount * 1,000,000 * 1,000,000) / (iagPriceInAda * 1,000,000)
+      const iagTokensNeeded =
+        (BigInt(adaAmount * 1_000_000) * 1_000_000n) /
+        BigInt(Math.floor(currentIagPriceInAda * 1_000_000));
+
+      console.log(
+        `IAG Payment: ${iagTokensNeeded} tokens (~${
+          Number(iagTokensNeeded) / 1_000_000
+        } IAG) for ${adaAmount} ADA worth`
+      );
+
       tx = await lucid
         .newTx()
         .pay.ToAddress(
           process.env.NODE_ENV && process.env.NODE_ENV === "development"
             ? PreprodAddress!
             : paymentAddress!,
-          { [IAG_UNIT]: 20_000_000n } // 5 IAG tokens
+          { [IAG_UNIT]: iagTokensNeeded }
         )
         .complete();
     } else {
