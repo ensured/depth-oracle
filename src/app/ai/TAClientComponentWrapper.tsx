@@ -23,7 +23,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Eye, EyeOff, Loader2, MinusCircle, PlusCircle } from "lucide-react";
+import { Eye, EyeOff, Loader2, MinusCircle, PlusCircle, ChartNoAxesColumn } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -170,6 +170,7 @@ export default function TAClientComponentWrapper({
     const [toggleBB, setToggleBB] = useState(true);
     const [toggleVolume, setToggleVolume] = useState(true);
     const [toggleObv, setToggleObv] = useState(false);
+    const [showChart, setShowChart] = useState(true);
 
     const { theme } = useTheme();
 
@@ -320,7 +321,7 @@ export default function TAClientComponentWrapper({
 
     // --- Single Chart with Multiple Panes ---
     useEffect(() => {
-        if (!chartContainerRef.current || !candleData.length) return;
+        if (!showChart || !chartContainerRef.current || !candleData.length) return;
 
         // Calculate total height based on enabled panes
         const paneCount = 1 + (toggleRsi ? 1 : 0) + (toggleMacd ? 1 : 0) + (toggleObv ? 1 : 0);
@@ -477,7 +478,7 @@ export default function TAClientComponentWrapper({
             chart.remove();
             chartRef.current = null;
         };
-    }, [candleData, bbData, toggleBB, volumeData, toggleVolume, rsiData, toggleRsi, macdData, toggleMacd, obvData, toggleObv, theme]);
+    }, [showChart, candleData, bbData, toggleBB, volumeData, toggleVolume, rsiData, toggleRsi, macdData, toggleMacd, obvData, toggleObv, theme]);
 
     const generateAIAnalysis = useCallback(async () => {
         if (!candles.length) return;
@@ -582,13 +583,18 @@ export default function TAClientComponentWrapper({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Main Chart Area */}
             <div className="lg:col-span-2 space-y-6 rounded-md">
-                <Card className="pt-6 pb-0 rounded-md border-border">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2 gap-4">
-                        <CardTitle className="text-xl font-bold flex items-center gap-2 shrink-0">
-                            {symbol}
-                        </CardTitle>
+                <Card className="rounded-md border-border">
+                    <CardHeader className="flex flex-row items-center justify-center pb-2 gap-4 !mx-2 !px-2">
+                        <div className="flex gap-2.5 flex-wrap justify-center items-center">
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowChart(!showChart)}
+                                className="flex gap-2 border-black/30 dark:border-white/30"
+                            >
+                                {showChart ? <EyeOff /> : <Eye />}
+                                {showChart ? "Hide" : "Show"} Chart
+                            </Button>
 
-                        <div className="flex gap-2 flex-wrap">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button
@@ -704,13 +710,18 @@ export default function TAClientComponentWrapper({
                                     <SelectItem value="1d">1d</SelectItem>
                                 </SelectContent>
                             </Select>
+
                         </div>
                     </CardHeader>
                     <CardContent className="p-0 flex flex-col rounded-md">
                         {/* Single Chart Container with Multiple Panes */}
-                        <div className="relative w-full rounded-md">
-                            <div ref={chartContainerRef} className="w-full rounded-md" />
-                        </div>
+                        {showChart ? (
+                            <div className="relative w-full rounded-md">
+                                <div ref={chartContainerRef} className="w-full rounded-md" />
+                            </div>
+                        ) : (
+                            null
+                        )}
                     </CardContent>
                 </Card>
             </div>
