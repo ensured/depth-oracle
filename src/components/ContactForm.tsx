@@ -63,7 +63,7 @@ export function ContactForm() {
       form.setValue("name", user.firstName || "");
       form.setValue("email", user.emailAddresses?.[0]?.emailAddress || "");
     }
-  }, [user?.id]);
+  }, [user?.id, form]);
 
   function onSubmit() {
     toast.custom(

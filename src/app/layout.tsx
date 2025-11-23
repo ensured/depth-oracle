@@ -70,7 +70,7 @@ export const metadata: Metadata = {
     title: "Depth Oracle - AI Jungian Psychology Companion",
     description:
       "Transform your self-awareness with AI-powered Jungian psychology tools. Explore archetypes, shadow work, and personal growth.",
-    images: ["/og-image-transparent.png", "/icon.png"],
+    images: ["/og-image-transparent.png"],
     creator: "@depthoracle",
   },
   robots: {
@@ -102,7 +102,6 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
         <head>
-
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{

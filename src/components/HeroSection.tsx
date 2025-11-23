@@ -23,13 +23,14 @@ import ogImage from "../../public/og-image-transparent.png";
 import videojs from "video.js";
 import { useWindowWidth } from "@/hooks/useWindowWidth";
 import { WalletCreditsModal } from "@/components/WalletCreditsModal";
-import { useState } from "react";
-
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 export default function HeroSection({
   setShowInputForm,
 }: {
   setShowInputForm?: (show: boolean) => void;
 }) {
+  const urlSearchParams = useSearchParams();
   const width = useWindowWidth();
   const [showWalletModal, setShowWalletModal] = useState(false);
 
@@ -66,6 +67,12 @@ export default function HeroSection({
       }
     }, 1000);
   };
+
+  useEffect(() => {
+    if (urlSearchParams?.get("openCreditsModal") === "true") {
+      setShowWalletModal(true);
+    }
+  }, [urlSearchParams]);
 
   return (
     <section className="relative flex items-center justify-center w-full ">
@@ -151,10 +158,10 @@ export default function HeroSection({
               <Button
                 variant="outline"
                 size="lg"
-                className="text-lg h-14 w-40 cursor-pointer  bg-gradient-to-r text-white hover:text-white select-none from-indigo-600 to-purple-600 shadow-lg hover:from-indigo-700 hover:to-purple-700 transform transition-all duration-300 hover:scale-105 hover:shadow-xl"
-                onClick={() => setShowInputForm?.(true)}
+                className="text-lg h-14 w-54 cursor-pointer  bg-gradient-to-r text-white hover:text-white select-none from-indigo-600 to-purple-600 shadow-lg hover:from-indigo-700 hover:to-purple-700 transform transition-all duration-300 hover:scale-105 hover:shadow-xl"
+              // onClick={() => setShowInputForm?.(true)}
               >
-                Try for free <span className=" text-base">🚀</span>
+                Login to try for free <span className=" text-base">🚀</span>
               </Button>
             </SignInButton>
           </SignedOut>
@@ -168,6 +175,7 @@ export default function HeroSection({
               >
                 Go to app <span className="text-base">🚀</span>
               </Button>
+
               <Button
                 size="lg"
                 className="group relative text-lg h-14 px-8 w-auto min-w-40 cursor-pointer select-none shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-2xl bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 text-white border border-white/20 hover:border-white/40 shadow-orange-500/30 hover:shadow-orange-500/50 font-semibold tracking-wide overflow-hidden"

@@ -34,6 +34,13 @@ export default function Main() {
       return;
     }
     fetchCreditInfo();
+
+    const handleOpenWalletModal = () => setShowWalletModal(true);
+    window.addEventListener("open-wallet-modal", handleOpenWalletModal);
+
+    return () => {
+      window.removeEventListener("open-wallet-modal", handleOpenWalletModal);
+    };
   }, [user?.id]);
 
   if (!user) {

@@ -397,24 +397,25 @@ export default function InputForm({
         return;
       }
 
+      // Block only if current thread has no messages (i.e. brand new & empty)
+      const currentThread = threads.find(t => t.id === currentThreadId);
+      if (currentThread && currentThread.messages.length === 0) {
+        return;
+      }
+
       const newThread = createThread(userId);
-      setThreads(getAllThreads(userId));
+      setThreads(getAllThreads(userId)); // or push optimistically
       setCurrentThreadId(newThread.id);
       setMessages([]);
       setError("");
-      toast.success("New conversation started");
 
-      // Focus the input
       setTimeout(() => {
         textareaRef.current?.focus();
-        setInput("");
       }, 0);
-    } catch (error) {
-      toast.error("Failed to create new thread", {
-        description: error instanceof Error ? error.message : "Unknown error",
-      });
+    } catch (error: unknown) {
+      toast.error("Failed to create new thread");
     }
-  }, [userId]);
+  }, [userId, currentThreadId, threads]);
 
   const handleThreadSwitch = useCallback(
     (threadId: string) => {
@@ -423,7 +424,6 @@ export default function InputForm({
         setCurrentThreadId(thread.id);
         setMessages(thread.messages);
         setError("");
-        toast.success(`Switched to: ${thread.title}`);
       }
     },
     [userId]
@@ -451,7 +451,6 @@ export default function InputForm({
           }
         }
 
-        toast.success("Thread deleted");
       } catch (error) {
         toast.error("Failed to delete thread", {
           description: error instanceof Error ? error.message : "Unknown error",
@@ -466,7 +465,6 @@ export default function InputForm({
       try {
         renameThread(threadId, userId, newTitle);
         setThreads(getAllThreads(userId));
-        toast.success("Thread renamed");
       } catch (error) {
         toast.error("Failed to rename thread", {
           description: error instanceof Error ? error.message : "Unknown error",
@@ -532,13 +530,13 @@ export default function InputForm({
         return () => clearTimeout(timer);
       }
     }
-  }, [creditInfo?.remaining]);
+  }, [creditInfo]);
 
   return (
     <div className="mx-auto w-full">
       <div className="rounded-md w-[100vw] h-[calc(100vh-3.6rem)] flex flex-col bg-gradient-to-br from-white via-indigo-50/20 to-purple-50/20 dark:from-slate-800 dark:via-indigo-900/20 dark:to-purple-900/20 shadow-xl dark:border-gray-700/50">
         {/* Chat Header */}
-        <div className="border-b border-gray-200/50 p-4 sm:p-6 dark:border-gray-700/50">
+        <div className="border-b border-gray-200/50 p-4 sm:p-6 dark:border-gray-700/50 !pb-2">
           <div className="flex flex-col">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <div className="flex items-center flex-1 min-w-0">

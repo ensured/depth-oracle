@@ -88,7 +88,7 @@ const FeedbackInput = () => {
       form.setValue("email", user.emailAddresses?.[0]?.emailAddress || "");
     }
     form.setFocus("feedback");
-  }, [user?.id, form]);
+  }, [user?.id, user?.emailAddresses, user?.firstName, form]);
 
   const checkRateLimit = () => {
     const now = Date.now();

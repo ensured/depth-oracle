@@ -84,7 +84,12 @@ export default function WalletConnect() {
                           setIsModalOpen(false);
                         },
                         (error) => {
-                          toast.error(error.toString());
+                          toast.error(error.toString(), {
+                            style: {
+                              background: "#3b3b3b",
+                              color: "#fff"
+                            }
+                          });
                         }
                       );
                     }}
@@ -108,4 +113,6 @@ export default function WalletConnect() {
       )}
     </div>
   );
+
+
 }
