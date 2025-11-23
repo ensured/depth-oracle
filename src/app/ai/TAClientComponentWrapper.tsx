@@ -583,12 +583,12 @@ export default function TAClientComponentWrapper({
             {/* Main Chart Area */}
             <div className="lg:col-span-2 space-y-6 rounded-md">
                 <Card className="pt-6 pb-0 rounded-md border-border">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-xl font-bold flex items-center gap-2">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2 gap-4">
+                        <CardTitle className="text-xl font-bold flex items-center gap-2 shrink-0">
                             {symbol}
                         </CardTitle>
 
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button
