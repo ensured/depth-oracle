@@ -17,7 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-type PaymentMethod = "ADA" | "IAG";
+type PaymentMethod = "ADA" | "IAG" | "SNEK";
 
 interface TransactionBuilderProps {
   creditsRemaining: number;
@@ -37,6 +37,7 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("ADA");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [totalIAG, setTotalIAG] = useState<bigint>(0n);
+  const [totalSNEK, setTotalSNEK] = useState<bigint>(0n);
 
   const { user } = useUser();
 
@@ -131,11 +132,12 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
     };
   }, [txHash, user?.id, onTransactionSuccess]);
 
-  // Check IAG balance when wallet is connected
+  // Check Token balances when wallet is connected
   useEffect(() => {
-    const checkIAGBalance = async () => {
+    const checkTokenBalances = async () => {
       if (!isConnected || !enabledWallet) {
         setTotalIAG(0n);
+        setTotalSNEK(0n);
         return;
       }
 
@@ -145,26 +147,40 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
         lucid.selectWallet.fromAPI(api);
 
         const utxos = await lucid.wallet().getUtxos();
+
+        // IAG Constants
         const IAG_POLICY_ID = "5d16cc1a177b5d9ba9cfa9793b07e60f1fb70fea1f8aef064415d114";
         const IAG_ASSET_NAME = "494147"; // "IAG" in hex
         const IAG_UNIT = IAG_POLICY_ID + IAG_ASSET_NAME;
 
-        let total = 0n;
+        // SNEK Constants
+        const SNEK_POLICY_ID = "279c909f348e533da5808898f87f9a14bb2c3dfbbacccd631d927a3f";
+        const SNEK_ASSET_NAME = "534e454b"; // "SNEK" in hex
+        const SNEK_UNIT = SNEK_POLICY_ID + SNEK_ASSET_NAME;
+
+        let iagTotal = 0n;
+        let snekTotal = 0n;
+
         for (const utxo of utxos) {
           Object.entries(utxo.assets).forEach(([unit, amount]) => {
             if (unit === IAG_UNIT) {
-              total += amount;
+              iagTotal += amount;
+            }
+            if (unit === SNEK_UNIT) {
+              snekTotal += amount;
             }
           });
         }
-        setTotalIAG(total);
+        setTotalIAG(iagTotal);
+        setTotalSNEK(snekTotal);
       } catch (err) {
-        console.error("Error checking IAG balance:", err);
+        console.error("Error checking token balances:", err);
         setTotalIAG(0n);
+        setTotalSNEK(0n);
       }
     };
 
-    checkIAGBalance();
+    checkTokenBalances();
   }, [isConnected, enabledWallet]);
 
   const handleBuildTransaction = async () => {
@@ -374,6 +390,41 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
                   </div>
                 </div>
                 {paymentMethod === "IAG" && (
+                  <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-white" />
+                  </div>
+                )}
+              </div>
+            </button>
+
+            {/* SNEK Payment Option */}
+            <button
+              onClick={() => setPaymentMethod("SNEK")}
+              disabled={totalSNEK === 0n}
+              className={`w-full p-4 rounded-lg border-2 transition-all text-left ${paymentMethod === "SNEK"
+                ? "border-green-500 bg-green-500/10"
+                : totalSNEK === 0n
+                  ? "border-border opacity-50 cursor-not-allowed"
+                  : "border-border hover:border-green-500/50"
+                }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className={`p-2 rounded-lg ${paymentMethod === "SNEK" ? "bg-green-500/20" : "bg-muted"
+                    }`}>
+                    <Coins className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-sm">Pay with SNEK</div>
+                    <div className="text-xs text-muted-foreground">
+                      {totalSNEK === 0n
+                        ? "No SNEK tokens available"
+                        : `${totalSNEK.toLocaleString()} SNEK available`
+                      }
+                    </div>
+                  </div>
+                </div>
+                {paymentMethod === "SNEK" && (
                   <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
                     <div className="w-2 h-2 rounded-full bg-white" />
                   </div>

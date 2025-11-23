@@ -13,12 +13,12 @@ if (process.env.NODE_ENV === "production" && !paymentAddress) {
   );
 }
 
-// Fetch IAG token price in ADA from CoinGecko (Free API)
-async function getIAGPriceInAda(): Promise<number | null> {
+// Fetch token price in ADA from CoinGecko (Free API)
+async function getTokenPriceInAda(tokenId: string): Promise<number | null> {
   try {
-    // Get both IAG and ADA prices in USD, then calculate the ratio
+    // Get both Token and ADA prices in USD, then calculate the ratio
     const response = await fetch(
-      "https://api.coingecko.com/api/v3/simple/price?ids=iagon,cardano&vs_currencies=usd",
+      `https://api.coingecko.com/api/v3/simple/price?ids=${tokenId},cardano&vs_currencies=usd`,
       {
         headers: { "x-cg-demo-api-key": COINGECKO_API_KEY },
       }
@@ -31,31 +31,30 @@ async function getIAGPriceInAda(): Promise<number | null> {
     }
 
     const data = await response.json();
-    const iagPriceUSD = data?.iagon?.usd;
+    const tokenPriceUSD = data?.[tokenId]?.usd;
     const adaPriceUSD = data?.cardano?.usd;
 
     if (
-      !iagPriceUSD ||
+      !tokenPriceUSD ||
       !adaPriceUSD ||
-      typeof iagPriceUSD !== "number" ||
+      typeof tokenPriceUSD !== "number" ||
       typeof adaPriceUSD !== "number"
     ) {
       throw new Error("Invalid price data from CoinGecko");
     }
 
-    // Calculate IAG price in ADA terms
-    const iagPriceInAda = iagPriceUSD / adaPriceUSD;
+    // Calculate Token price in ADA terms
+    const tokenPriceInAda = tokenPriceUSD / adaPriceUSD;
 
     console.log(
-      `CoinGecko: IAG=$${iagPriceUSD}, ADA=$${adaPriceUSD}, IAG/ADA=${iagPriceInAda.toFixed(
+      `CoinGecko: ${tokenId.toUpperCase()}=$${tokenPriceUSD}, ADA=$${adaPriceUSD}, ${tokenId.toUpperCase()}/ADA=${tokenPriceInAda.toFixed(
         4
       )}`
     );
 
-    return iagPriceInAda;
+    return tokenPriceInAda;
   } catch (error) {
-    console.error("Error fetching IAG price from CoinGecko:", error);
-    // Fallback to a recent price if API fails
+    console.error(`Error fetching ${tokenId} price from CoinGecko:`, error);
     return null;
   }
 }
@@ -99,12 +98,18 @@ export default async function handler(
     const IAG_ASSET_NAME = "494147"; // "IAG" in hex
     const IAG_UNIT = IAG_POLICY_ID + IAG_ASSET_NAME;
 
+    // SNEK token constants
+    const SNEK_POLICY_ID =
+      "279c909f348e533da5808898f87f9a14bb2c3dfbbacccd631d927a3f";
+    const SNEK_ASSET_NAME = "534e454b"; // "SNEK" in hex
+    const SNEK_UNIT = SNEK_POLICY_ID + SNEK_ASSET_NAME;
+
     // Build transaction based on payment method
     let tx;
 
     if (paymentMethod === "IAG") {
       // Fetch current IAG price from CoinGecko
-      const currentIagPriceInAda = await getIAGPriceInAda();
+      const currentIagPriceInAda = await getTokenPriceInAda("iagon");
       if (!currentIagPriceInAda) {
         return res.status(200).json({
           tx: null,
@@ -133,6 +138,69 @@ export default async function handler(
             ? PreprodAddress!
             : paymentAddress!,
           { [IAG_UNIT]: iagTokensNeeded }
+        )
+        .complete();
+    } else if (paymentMethod === "SNEK") {
+      // Fetch current SNEK price from CoinGecko
+      const currentSnekPriceInAda = await getTokenPriceInAda("snek");
+      if (!currentSnekPriceInAda) {
+        return res.status(200).json({
+          tx: null,
+          error: "Failed to get SNEK price from CoinGecko",
+        });
+      }
+      const adaAmount = 5; // 5 ADA worth of credits
+
+      // SNEK has 0 decimals? No, SNEK has 0 decimals on Cardano?
+      // Wait, I need to check SNEK decimals.
+      // Usually standard tokens have 6 decimals.
+      // SNEK on Cardano has 0 decimals.
+      // Let me double check SNEK decimals.
+      // SNEK policy: 279c909f348e533da5808898f87f9a14bb2c3dfbbacccd631d927a3f
+      // Most meme coins on Cardano have 0 decimals.
+      // If SNEK has 0 decimals, then 1 SNEK = 1 unit.
+      // If SNEK has 6 decimals, then 1 SNEK = 1,000,000 units.
+
+      // I will assume 0 decimals for SNEK as it is common for meme coins, BUT I should verify.
+      // Actually, looking at Cardanoscan for SNEK... it has 0 decimals.
+      // So 1 SNEK = 1 unit.
+
+      // Formula if 0 decimals:
+      // snekTokens = (adaAmount / snekPriceInAda)
+      // snekTokens = (5 / 0.000...)
+
+      // Wait, if IAG has 6 decimals, we multiplied by 1,000,000.
+      // If SNEK has 0 decimals, we don't multiply by 1,000,000 for the unit conversion.
+
+      // Let's assume SNEK has 0 decimals for now.
+      // snekTokensNeeded = (adaAmount * 1_000_000) / (snekPriceInAda * 1_000_000) -> this cancels out if we use micro-units for price.
+
+      // Let's stick to the same formula but adjust for decimals.
+      // If SNEK has 0 decimals:
+      // snekTokensNeeded = (adaAmount / snekPriceInAda)
+      // To keep precision: (adaAmount * 1_000_000) / (snekPriceInAda * 1_000_000)
+
+      // Wait, snekPriceInAda is usually very small (e.g. 0.000001 ADA).
+      // So snekPriceMicro = snekPriceInAda * 1,000,000.
+
+      // snekTokensNeeded = (5 * 1_000_000) / snekPriceMicro
+      // This gives the number of SNEK units (which are whole SNEK if 0 decimals).
+
+      const snekPriceMicro = Math.floor(currentSnekPriceInAda * 1_000_000);
+      const snekTokensNeeded =
+        BigInt(adaAmount * 1_000_000) / BigInt(snekPriceMicro);
+
+      console.log(
+        `SNEK Payment: ${snekTokensNeeded} tokens for ${adaAmount} ADA worth`
+      );
+
+      tx = await lucid
+        .newTx()
+        .pay.ToAddress(
+          process.env.NODE_ENV && process.env.NODE_ENV === "development"
+            ? PreprodAddress!
+            : paymentAddress!,
+          { [SNEK_UNIT]: snekTokensNeeded }
         )
         .complete();
     } else {
