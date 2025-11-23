@@ -150,42 +150,6 @@ export default async function handler(
         });
       }
       const adaAmount = 5; // 5 ADA worth of credits
-
-      // SNEK has 0 decimals? No, SNEK has 0 decimals on Cardano?
-      // Wait, I need to check SNEK decimals.
-      // Usually standard tokens have 6 decimals.
-      // SNEK on Cardano has 0 decimals.
-      // Let me double check SNEK decimals.
-      // SNEK policy: 279c909f348e533da5808898f87f9a14bb2c3dfbbacccd631d927a3f
-      // Most meme coins on Cardano have 0 decimals.
-      // If SNEK has 0 decimals, then 1 SNEK = 1 unit.
-      // If SNEK has 6 decimals, then 1 SNEK = 1,000,000 units.
-
-      // I will assume 0 decimals for SNEK as it is common for meme coins, BUT I should verify.
-      // Actually, looking at Cardanoscan for SNEK... it has 0 decimals.
-      // So 1 SNEK = 1 unit.
-
-      // Formula if 0 decimals:
-      // snekTokens = (adaAmount / snekPriceInAda)
-      // snekTokens = (5 / 0.000...)
-
-      // Wait, if IAG has 6 decimals, we multiplied by 1,000,000.
-      // If SNEK has 0 decimals, we don't multiply by 1,000,000 for the unit conversion.
-
-      // Let's assume SNEK has 0 decimals for now.
-      // snekTokensNeeded = (adaAmount * 1_000_000) / (snekPriceInAda * 1_000_000) -> this cancels out if we use micro-units for price.
-
-      // Let's stick to the same formula but adjust for decimals.
-      // If SNEK has 0 decimals:
-      // snekTokensNeeded = (adaAmount / snekPriceInAda)
-      // To keep precision: (adaAmount * 1_000_000) / (snekPriceInAda * 1_000_000)
-
-      // Wait, snekPriceInAda is usually very small (e.g. 0.000001 ADA).
-      // So snekPriceMicro = snekPriceInAda * 1,000,000.
-
-      // snekTokensNeeded = (5 * 1_000_000) / snekPriceMicro
-      // This gives the number of SNEK units (which are whole SNEK if 0 decimals).
-
       const snekPriceMicro = Math.floor(currentSnekPriceInAda * 1_000_000);
       const snekTokensNeeded =
         BigInt(adaAmount * 1_000_000) / BigInt(snekPriceMicro);
