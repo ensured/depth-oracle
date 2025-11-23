@@ -413,6 +413,7 @@ export default function InputForm({
         textareaRef.current?.focus();
       }, 0);
     } catch (error: unknown) {
+      console.error(error);
       toast.error("Failed to create new thread");
     }
   }, [userId, currentThreadId, threads]);
