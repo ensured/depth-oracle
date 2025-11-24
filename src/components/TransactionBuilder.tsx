@@ -3,7 +3,7 @@
 import { useCardano } from "@cardano-foundation/cardano-connect-with-wallet";
 import { NetworkType } from "@cardano-foundation/cardano-connect-with-wallet-core";
 import { useState, useEffect, useRef } from "react";
-import { Emulator, Lucid } from "@lucid-evolution/lucid";
+import { Emulator, Lucid, LucidEvolution } from "@lucid-evolution/lucid";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Loader2, Coins, Wallet } from "lucide-react";
@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { network } from "@/types/network";
 
 type PaymentMethod = "ADA" | "IAG" | "SNEK";
 
@@ -38,13 +39,10 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [totalIAG, setTotalIAG] = useState<bigint>(0n);
   const [totalSNEK, setTotalSNEK] = useState<bigint>(0n);
+  const [lucid, setLucid] = useState<LucidEvolution | null>(null);
+  const [api, setApi] = useState<any | null>(null);
 
   const { user } = useUser();
-
-  const network =
-    process.env.NODE_ENV === "development"
-      ? NetworkType.TESTNET
-      : NetworkType.MAINNET;
 
   const { isConnected, usedAddresses, enabledWallet, accountBalance } = useCardano({
     limitNetwork: network
@@ -145,6 +143,8 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
         const api = await window.cardano[enabledWallet].enable();
         const lucid = await Lucid(new Emulator([]), "Mainnet");
         lucid.selectWallet.fromAPI(api);
+        setLucid(lucid);
+        setApi(api);
 
         const utxos = await lucid.wallet().getUtxos();
 
@@ -196,13 +196,10 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
     hasNotifiedRef.current = false;
 
     try {
-      // Get API from wallet first
-      const api = await window.cardano[enabledWallet].enable();
-
-      // Initialize Lucid with Mainnet (must match backend network)
-      const lucid = await Lucid(new Emulator([]), "Mainnet");
-
       // Select wallet - this replaces Emulator with actual wallet provider
+      if (!lucid || !api) {
+        throw new Error("Lucid or API not initialized");
+      }
       lucid.selectWallet.fromAPI(api);
 
       // Make API request to build transaction
@@ -218,7 +215,7 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
         }),
       });
 
-      const { tx, error } = await response.json();
+      const { tx, fee, error } = await response.json();
       if (error) {
         throw new Error(error);
       }
@@ -228,9 +225,20 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
 
       // Submit transaction
       const txHash = await signedTx.submit();
+      if (!txHash) {
+        throw new Error("Transaction failed");
+      }
 
       setTxHash(txHash);
       setIsDialogOpen(false); // Close dialog on success
+
+      // Show fee in toast
+      if (fee) {
+        toast.info("Transaction Fee", {
+          description: `Network Fee: ${(Number(fee) / 1_000_000).toFixed(6)} ADA`,
+          duration: 5000,
+        });
+      }
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : "Unknown error");

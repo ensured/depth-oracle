@@ -1,6 +1,6 @@
-import { Koios, Lucid } from "@lucid-evolution/lucid";
+import { Koios, Lucid, UTxO } from "@lucid-evolution/lucid";
 import { NextApiRequest, NextApiResponse } from "next";
-
+import * as LE from "@lucid-evolution/lucid";
 const paymentAddress = process.env.PAYMENT_ADDRESS;
 const PreprodAddress =
   "addr_test1qrl6f3gm0uph6vscjqs900yakynas5eu6puzcrua3kyt6q83uu458738004pap9qr9f3tmnck5y3pt9xcwyv58p7fsvsw570xn";
@@ -12,6 +12,29 @@ if (process.env.NODE_ENV === "production" && !paymentAddress) {
     "PAYMENT_ADDRESS environment variable is required for production"
   );
 }
+
+// Token Configuration
+interface TokenConfig {
+  policyId: string;
+  assetName: string; // Hex encoded
+  coingeckoId: string;
+  decimals: number; // 6 for IAG, 0 for SNEK
+}
+
+const TOKENS: Record<string, TokenConfig> = {
+  IAG: {
+    policyId: "5d16cc1a177b5d9ba9cfa9793b07e60f1fb70fea1f8aef064415d114",
+    assetName: "494147", // "IAG"
+    coingeckoId: "iagon",
+    decimals: 6,
+  },
+  SNEK: {
+    policyId: "279c909f348e533da5808898f87f9a14bb2c3dfbbacccd631d927a3f",
+    assetName: "534e454b", // "SNEK"
+    coingeckoId: "snek",
+    decimals: 0,
+  },
+};
 
 // Fetch token price in ADA from CoinGecko (Free API)
 async function getTokenPriceInAda(tokenId: string): Promise<number | null> {
@@ -92,82 +115,10 @@ export default async function handler(
     // Select wallet from address (no private keys on the server)
     lucid.selectWallet.fromAddress(address, []);
 
-    // IAG token constants
-    const IAG_POLICY_ID =
-      "5d16cc1a177b5d9ba9cfa9793b07e60f1fb70fea1f8aef064415d114";
-    const IAG_ASSET_NAME = "494147"; // "IAG" in hex
-    const IAG_UNIT = IAG_POLICY_ID + IAG_ASSET_NAME;
-
-    // SNEK token constants
-    const SNEK_POLICY_ID =
-      "279c909f348e533da5808898f87f9a14bb2c3dfbbacccd631d927a3f";
-    const SNEK_ASSET_NAME = "534e454b"; // "SNEK" in hex
-    const SNEK_UNIT = SNEK_POLICY_ID + SNEK_ASSET_NAME;
-
     // Build transaction based on payment method
     let tx;
 
-    if (paymentMethod === "IAG") {
-      // Fetch current IAG price from CoinGecko
-      const currentIagPriceInAda = await getTokenPriceInAda("iagon");
-      if (!currentIagPriceInAda) {
-        return res.status(200).json({
-          tx: null,
-          error: "Failed to get IAG price from CoinGecko",
-        });
-      }
-      const adaAmount = 5; // 5 ADA worth of credits
-
-      // Convert to micro-units (multiply by 1,000,000) and do BigInt math
-      // iagTokens (in micro-units) = (adaAmount / iagPriceInAda) * 1,000,000
-      // = (adaAmount * 1,000,000 * 1,000,000) / (iagPriceInAda * 1,000,000)
-      const iagTokensNeeded =
-        (BigInt(adaAmount * 1_000_000) * 1_000_000n) /
-        BigInt(Math.floor(currentIagPriceInAda * 1_000_000));
-
-      console.log(
-        `IAG Payment: ${iagTokensNeeded} tokens (~${
-          Number(iagTokensNeeded) / 1_000_000
-        } IAG) for ${adaAmount} ADA worth`
-      );
-
-      tx = await lucid
-        .newTx()
-        .pay.ToAddress(
-          process.env.NODE_ENV && process.env.NODE_ENV === "development"
-            ? PreprodAddress!
-            : paymentAddress!,
-          { [IAG_UNIT]: iagTokensNeeded }
-        )
-        .complete();
-    } else if (paymentMethod === "SNEK") {
-      // Fetch current SNEK price from CoinGecko
-      const currentSnekPriceInAda = await getTokenPriceInAda("snek");
-      if (!currentSnekPriceInAda) {
-        return res.status(200).json({
-          tx: null,
-          error: "Failed to get SNEK price from CoinGecko",
-        });
-      }
-      const adaAmount = 5; // 5 ADA worth of credits
-      const snekPriceMicro = Math.floor(currentSnekPriceInAda * 1_000_000);
-      const snekTokensNeeded =
-        BigInt(adaAmount * 1_000_000) / BigInt(snekPriceMicro);
-
-      console.log(
-        `SNEK Payment: ${snekTokensNeeded} tokens for ${adaAmount} ADA worth`
-      );
-
-      tx = await lucid
-        .newTx()
-        .pay.ToAddress(
-          process.env.NODE_ENV && process.env.NODE_ENV === "development"
-            ? PreprodAddress!
-            : paymentAddress!,
-          { [SNEK_UNIT]: snekTokensNeeded }
-        )
-        .complete();
-    } else {
+    if (paymentMethod === "ADA") {
       // Default: Pay with ADA
       tx = await lucid
         .newTx()
@@ -175,11 +126,74 @@ export default async function handler(
           process.env.NODE_ENV && process.env.NODE_ENV === "development"
             ? PreprodAddress!
             : paymentAddress!,
-          { lovelace: 5_000_000n } // 5 ADA
+          { lovelace: 1_000_000n } // 1 ADA
+        )
+        .complete();
+    } else {
+      const tokenConfig = TOKENS[paymentMethod];
+
+      if (!tokenConfig) {
+        return res.status(400).json({ error: "Invalid payment method" });
+      }
+
+      const currentTokenPriceInAda = await getTokenPriceInAda(
+        tokenConfig.coingeckoId
+      );
+
+      if (!currentTokenPriceInAda) {
+        return res.status(200).json({
+          tx: null,
+          error: `Failed to get ${paymentMethod} price from CoinGecko`,
+        });
+      }
+
+      const adaAmount = 5; // 5 ADA worth of credits
+      const tokenUnit = tokenConfig.policyId + tokenConfig.assetName;
+
+      let tokensNeeded: bigint;
+
+      if (tokenConfig.decimals > 0) {
+        const priceInMicro = Math.floor(currentTokenPriceInAda * 1_000_000);
+        tokensNeeded =
+          (BigInt(adaAmount * 1_000_000) * BigInt(10 ** tokenConfig.decimals)) /
+          BigInt(priceInMicro);
+      } else {
+        const priceInMicro = Math.floor(currentTokenPriceInAda * 1_000_000);
+        tokensNeeded = BigInt(adaAmount * 1_000_000) / BigInt(priceInMicro);
+      }
+
+      tx = await lucid
+        .newTx()
+        .pay.ToAddress(
+          process.env.NODE_ENV && process.env.NODE_ENV === "development"
+            ? PreprodAddress!
+            : paymentAddress!,
+          { [tokenUnit]: tokensNeeded }
         )
         .complete();
     }
 
+    const txHash = tx.toCBOR();
+    const utxo: UTxO = {
+      txHash,
+      outputIndex: 0,
+      address,
+      assets: { lovelace: 0n },
+    };
+
+    const minLovelaces = LE.calculateMinLovelaceFromUTxO(
+      LE.PROTOCOL_PARAMETERS_DEFAULT.coinsPerUtxoByte,
+      utxo
+    );
+    tx = await lucid
+      .newTx()
+      .pay.ToAddress(
+        process.env.NODE_ENV && process.env.NODE_ENV === "development"
+          ? PreprodAddress!
+          : paymentAddress!,
+        { lovelace: BigInt(minLovelaces) } // Most minimum lovelaces required
+      )
+      .complete();
     return res.status(200).json({ tx: tx.toCBOR(), error: null });
   } catch (error) {
     let jsonError = JSON.stringify(error);

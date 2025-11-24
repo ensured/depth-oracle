@@ -14,7 +14,8 @@ import { useCardano } from "@cardano-foundation/cardano-connect-with-wallet";
 import { useState, useEffect, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import { getCreditUsageInfo } from "@/lib/token-usage";
-import { CreditCard, Calendar, Zap, Wallet } from "lucide-react";
+import { CreditCard, Calendar, Zap, Wallet, Loader2 } from "lucide-react";
+import { network } from "@/types/network";
 
 // Dynamically import the TransactionBuilder with SSR disabled
 const DynamicTransactionBuilder = dynamic(
@@ -40,11 +41,6 @@ export function WalletCreditsModal({ open, onOpenChange, creditInfo: propCreditI
         plan: string;
         resetDate?: string;
     } | null>(null);
-
-    const network =
-        process.env.NODE_ENV === "development"
-            ? NetworkType.TESTNET
-            : NetworkType.MAINNET;
 
     const [isProcessing, setIsProcessing] = useState(false);
     const { isConnected } = useCardano({
@@ -164,14 +160,18 @@ export function WalletCreditsModal({ open, onOpenChange, creditInfo: propCreditI
 
                     {/* Transaction Builder */}
                     {isConnected && (
-                        <div className="space-y-3 pt-2 border-t border-border">
-                            <h4 className="text-sm font-medium text-foreground/80">Top Up Credits</h4>
-                            <div className="bg-muted/10 rounded-lg overflow-hidden">
-                                <DynamicTransactionBuilder
-                                    creditsRemaining={displayCreditInfo?.remaining || 0}
-                                    onTransactionSuccess={handleTransactionSuccess}
-                                    onProcessingChange={setIsProcessing}
-                                />
+                        <div className="rounded-lg flex flex-col items-center space-y-3 pt-5 border border-border bg-muted/20 hover:bg-muted/30 shadow-sm overflow-hidden">
+                            <h4 className="text-sm font-medium text-foreground/80 flex items-center gap-2">
+                                <Zap className="w-4 h-4 text-blue-500" />
+                                Top Up Credits
+                            </h4>
+                            <div className="w-full">
+                                {!displayCreditInfo || !isConnected ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> :
+                                    <DynamicTransactionBuilder
+                                        creditsRemaining={displayCreditInfo?.remaining || 0}
+                                        onTransactionSuccess={handleTransactionSuccess}
+                                        onProcessingChange={setIsProcessing}
+                                    />}
                             </div>
                         </div>
                     )}

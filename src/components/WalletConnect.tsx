@@ -1,16 +1,11 @@
 "use client";
+import { network } from "@/types/network";
 import { useCardano } from "@cardano-foundation/cardano-connect-with-wallet";
-import { NetworkType } from "@cardano-foundation/cardano-connect-with-wallet-core";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export default function WalletConnect() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const network =
-    process.env.NODE_ENV === "development"
-      ? NetworkType.TESTNET
-      : NetworkType.MAINNET;
 
   const {
     isConnected,
