@@ -87,22 +87,34 @@ Volume Spike Detected: ${body.marketContext?.volume_spike ? "YES" : "NO"}
 
 Recent Price Action (Last 15 Candles):
 ${body.recentCandles
-  ?.map(
-    (c: Candle, i: number) =>
-      `[${i + 1}] O:${c.open} H:${c.high} L:${c.low} C:${c.close} V:${c.volume}`
-  )
+  ?.map((c: Candle) => {
+    const date = new Date(c.time * 1000);
+    const userTimezone = body.timezone || "UTC";
+    const timeStr = new Intl.DateTimeFormat("en-US", {
+      timeZone: userTimezone,
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    })
+      .format(date)
+      .toLowerCase();
+    return `[${timeStr}] O:${c.open} H:${c.high} L:${c.low} C:${c.close} V:${c.volume}`;
+  })
   .join("\n")}
 
 Instructions:
-1. **Pattern Recognition**: Identify specific candlestick patterns (e.g., Hammer, Doji, Engulfing) in the last 3-5 candles.
-2. **Chart Patterns**: Look for micro-patterns (e.g., Bull Flag, Double Bottom) in the 15-candle sequence.
+1. **Pattern Recognition**: Identify specific candlestick patterns (e.g., Hammer, Doji, Engulfing) in the last 3-5 candles. Reference them by TIMESTAMP (e.g., "Bullish Engulfing at 8:05pm").
+2. **Chart Patterns**: Look for micro-patterns (e.g., Bull Flag, Double Bottom) in the 15-candle sequence. Reference by TIME RANGE (e.g., "Bull Flag forming from 7:15pm to 8:10pm").
 3. **Support/Resistance**: Compare current price to Local Support/Resistance levels.
-4. **Trend Structure**: Analyze if the market is making Higher Highs/Lows or Lower Highs/Lows.
+4. **Trend Structure**: Analyze if the market is making Higher Highs/Lows or Lower Highs/Lows. Reference key price points by TIME.
 5. **Volume Analysis**: Check for OBV divergence (price vs OBV trend) and significant volume spikes at key levels.
 6. **Confluence**: Do patterns align with indicators and volume?
 
+CRITICAL: When describing patterns, ALWAYS reference candles by their TIMESTAMP (e.g., "8:05pm"), NOT by ordinal numbers (e.g., "candle 14-15").
+
 Return a JSON object with this EXACT structure (no markdown, no code blocks, just raw JSON):
 {
+  "position": "BUY" | "SELL" | "HOLD",
   "signal": "BULLISH" | "BEARISH" | "NEUTRAL",
   "confidence": number (0-100),
   "reasoning": "Detailed analysis citing specific patterns, support/resistance interactions, indicator confluence, and volume dynamics.",
@@ -112,8 +124,8 @@ Return a JSON object with this EXACT structure (no markdown, no code blocks, jus
     "take_profit": "price"
   },
   "patterns": {
-    "candlestick": "Name of pattern detected (e.g., 'Bullish Engulfing') or 'None'",
-    "chart_pattern": "Name of chart pattern (e.g., 'Bull Flag') or 'None'",
+    "candlestick": "Name of pattern detected with TIMESTAMP (e.g., 'Bullish Engulfing at 8:05pm') or 'None'",
+    "chart_pattern": "Name of chart pattern with TIME RANGE (e.g., 'Bull Flag from 7:15pm - 8:10pm') or 'None'",
     "trend": "Description of trend structure (e.g., 'Uptrend with Higher Highs')"
   }
 }
@@ -134,6 +146,7 @@ Return a JSON object with this EXACT structure (no markdown, no code blocks, jus
       console.error("Failed to parse AI JSON:", jsonString);
       // Fallback if JSON parsing fails
       analysis = {
+        position: "HOLD",
         signal: "NEUTRAL",
         confidence: 0,
         reasoning:

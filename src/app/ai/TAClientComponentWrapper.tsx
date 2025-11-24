@@ -137,6 +137,7 @@ interface Props {
 }
 
 interface AIAnalysisResult {
+    position: "BUY" | "SELL" | "HOLD";
     signal: "BULLISH" | "BEARISH" | "NEUTRAL";
     confidence: number;
     reasoning: string;
@@ -503,12 +504,16 @@ export default function TAClientComponentWrapper({
             const localSupport = Math.min(...recent50.map((c: Candle) => c.low));
             const localResistance = Math.max(...recent50.map((c: Candle) => c.high));
 
+            // Detect user's timezone
+            const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
             const res = await fetch("/api/chart-analysis", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     symbol,
                     timeframe,
+                    timezone: userTimezone, // Send user's timezone to the API
                     indicators: {
                         rsi: indicators.rsi,
                         macd: indicators.macd,
@@ -768,11 +773,16 @@ export default function TAClientComponentWrapper({
                                 {/* Signal Badge */}
                                 <div className="flex flex-col items-center gap-2 p-4 rounded-xl border">
                                     <span className="text-sm uppercase tracking-wider">
-                                        Signal Bias
+                                        Signal Bias/Position
                                     </span>
-                                    <Badge className={`${getSignalColor(aiAnalysis.signal)} px-6 py-2 text-xl font-bold`}>
-                                        {aiAnalysis.signal}
-                                    </Badge>
+                                    <div className="flex gap-2">
+                                        <Badge className={`${getSignalColor(aiAnalysis.signal)} px-6 py-2 text-xl font-bold`}>
+                                            {aiAnalysis.signal}
+                                        </Badge>
+                                        <Badge className={`${getSignalColor(aiAnalysis.position)} px-6 py-2 text-xl font-bold`}>
+                                            {aiAnalysis.position}
+                                        </Badge>
+                                    </div>
                                 </div>
 
                                 {/* Confidence Meter */}
@@ -862,6 +872,6 @@ export default function TAClientComponentWrapper({
                     </CardContent>
                 </Card>
             </div>
-        </div>
+        </div >
     );
 }
