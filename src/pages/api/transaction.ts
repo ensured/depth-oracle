@@ -3,7 +3,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 const paymentAddress = process.env.PAYMENT_ADDRESS;
 const PreprodAddress =
   "addr_test1qrl6f3gm0uph6vscjqs900yakynas5eu6puzcrua3kyt6q83uu458738004pap9qr9f3tmnck5y3pt9xcwyv58p7fsvsw570xn";
-const COINGECKO_API_KEY = process.env.NEXT_PUBLIC_COINGECKO_API_KEY || "";
+const COINGECKO_API_KEY = process.env.COINGECKO_API_KEY || "";
 
 // Validate that PAYMENT_ADDRESS is set for production
 if (process.env.NODE_ENV === "production" && !paymentAddress) {

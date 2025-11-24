@@ -48,18 +48,16 @@ export default async function AIChartPage() {
     const indicators = calculateIndicators(candles);
 
     return (
-        <div className="min-h-screen flex items-center justify-center">
-            <div className="flex flex-col items-center justify-center p-0.5 sm:p-0.5 md:p-2 lg:p-4 max-w-[95vw]">
-                <h1 className="text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">
-                    Real-Time AI Technical Analysis
-                </h1>
-                <TAClientComponentWrapper
-                    initialCandles={candles}
-                    initialIndicators={indicators}
-                    symbol={symbol}
-                    timeframe={timeframe}
-                />
-            </div>
+        <div className="min-h-[calc(100vh-57px)] flex flex-col items-center justify-center w-full">
+            <h1 className="flex justify-center pt-6 w-full text-3xl font-bold mb-10 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">
+                Real-Time AI Technical Analysis
+            </h1>
+            <TAClientComponentWrapper
+                initialCandles={candles}
+                initialIndicators={indicators}
+                symbol={symbol}
+                timeframe={timeframe}
+            />
         </div>
     );
 }
