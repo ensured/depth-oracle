@@ -173,27 +173,20 @@ export default async function handler(
         .complete();
     }
 
-    const txHash = tx.toCBOR();
-    const utxo: UTxO = {
-      txHash,
-      outputIndex: 0,
-      address,
-      assets: { lovelace: 0n },
-    };
+    // const txHash = tx.toCBOR();
+    // const utxo: UTxO = {
+    //   txHash,
+    //   outputIndex: 0,
+    //   address,
+    //   assets: { lovelace: 0n },
+    // };
 
-    const minLovelaces = LE.calculateMinLovelaceFromUTxO(
-      LE.PROTOCOL_PARAMETERS_DEFAULT.coinsPerUtxoByte,
-      utxo
-    );
-    tx = await lucid
-      .newTx()
-      .pay.ToAddress(
-        process.env.NODE_ENV && process.env.NODE_ENV === "development"
-          ? PreprodAddress!
-          : paymentAddress!,
-        { lovelace: BigInt(minLovelaces) } // Most minimum lovelaces required
-      )
-      .complete();
+    // const minLovelaces = LE.calculateMinLovelaceFromUTxO(
+    //   LE.PROTOCOL_PARAMETERS_DEFAULT.coinsPerUtxoByte,
+    //   utxo
+    // );
+    // console.log(minLovelaces);
+
     return res.status(200).json({ tx: tx.toCBOR(), error: null });
   } catch (error) {
     let jsonError = JSON.stringify(error);
