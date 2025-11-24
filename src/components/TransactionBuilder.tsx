@@ -2,7 +2,7 @@
 
 import { useCardano } from "@cardano-foundation/cardano-connect-with-wallet";
 import { useState, useEffect, useRef } from "react";
-import { Emulator, Lucid, LucidEvolution } from "@lucid-evolution/lucid";
+import { Emulator, Lucid, LucidEvolution, WalletApi } from "@lucid-evolution/lucid";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Loader2, Coins, Wallet } from "lucide-react";
@@ -39,7 +39,7 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
   const [totalIAG, setTotalIAG] = useState<bigint>(0n);
   const [totalSNEK, setTotalSNEK] = useState<bigint>(0n);
   const [lucid, setLucid] = useState<LucidEvolution | null>(null);
-  const [api, setApi] = useState<any | null>(null);
+  const [api, setApi] = useState<WalletApi | null>(null);
 
   const { user } = useUser();
 
