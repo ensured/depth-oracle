@@ -1,7 +1,6 @@
 "use client";
 
 import { useCardano } from "@cardano-foundation/cardano-connect-with-wallet";
-import { NetworkType } from "@cardano-foundation/cardano-connect-with-wallet-core";
 import { useState, useEffect, useRef } from "react";
 import { Emulator, Lucid, LucidEvolution } from "@lucid-evolution/lucid";
 import Link from "next/link";

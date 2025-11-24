@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/dialog";
 import dynamic from "next/dynamic";
 import WalletConnect from "./WalletConnect";
-import { NetworkType } from "@cardano-foundation/cardano-connect-with-wallet-core";
 import { useCardano } from "@cardano-foundation/cardano-connect-with-wallet";
 import { useState, useEffect, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
