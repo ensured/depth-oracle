@@ -1,6 +1,5 @@
-import { Koios, Lucid, UTxO } from "@lucid-evolution/lucid";
+import { Koios, Lucid } from "@lucid-evolution/lucid";
 import { NextApiRequest, NextApiResponse } from "next";
-import * as LE from "@lucid-evolution/lucid";
 const paymentAddress = process.env.PAYMENT_ADDRESS;
 const PreprodAddress =
   "addr_test1qrl6f3gm0uph6vscjqs900yakynas5eu6puzcrua3kyt6q83uu458738004pap9qr9f3tmnck5y3pt9xcwyv58p7fsvsw570xn";
