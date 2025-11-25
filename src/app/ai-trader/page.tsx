@@ -149,7 +149,7 @@ export default function AILandingPage() {
                     <SignedIn>
                         <div className="flex flex-col sm:flex-row gap-4 items-center">
                             {isPro ? (
-                                <Link href="/ai/app">
+                                <Link href="/ai-trader/app">
                                     <Button
                                         size="lg"
                                         className="group relative text-lg h-14 px-8 w-auto cursor-pointer select-none shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-2xl bg-gradient-to-br from-emerald-400 via-cyan-500 to-blue-500 text-white border border-white/20 hover:border-white/40 shadow-cyan-500/30 hover:shadow-cyan-500/50 font-semibold tracking-wide overflow-hidden"
@@ -315,7 +315,7 @@ export default function AILandingPage() {
                         </SignInButton>
                     </SignedOut>
                     <SignedIn>
-                        <Link href="/ai/app">
+                        <Link href="/ai-trader/app">
                             <Button
                                 size="lg"
                                 className="text-xl h-16 px-12 cursor-pointer bg-gradient-to-r text-white hover:text-white select-none from-blue-600 via-purple-600 to-pink-600 shadow-lg hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 transform transition-all duration-300 hover:scale-105 hover:shadow-2xl"

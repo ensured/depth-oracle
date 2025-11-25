@@ -57,7 +57,7 @@ export function Header() {
 
           <nav className="hidden sm:flex items-center gap-4">
             <Link
-              href="/ai"
+              href="/ai-trader"
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
             >
               <span className="text-blue-500">📊</span>

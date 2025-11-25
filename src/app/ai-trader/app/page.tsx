@@ -1,7 +1,7 @@
 import TAClientComponentWrapper from "./TAWrapperClient";
 import { fetchCandles } from "@/lib/data-fetcher";
 import { calculateIndicators } from "@/lib/ta";
-import { isProSubscribed } from "@/app/ai/app/actions";
+import { isProSubscribed } from "@/app/ai-trader/app/actions";
 import ProAccessRequired from "./ProAccessRequired";
 
 // Revalidate every 5 minutes
