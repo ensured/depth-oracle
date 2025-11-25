@@ -1,6 +1,6 @@
 import ClientWrapper from "@/components/ClientWrapper";
 import { getSupabaseInstance } from "@/lib/supabaseSingletonServer";
-import { auth } from "@clerk/nextjs/server";
+// import { auth } from "@clerk/nextjs/server";
 export default async function Home() {
   const supabase = await getSupabaseInstance()
   const { data, error } = await supabase.from("token_usage").select("*").limit(1);
