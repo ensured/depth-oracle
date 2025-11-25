@@ -75,7 +75,6 @@ export default function WalletConnect() {
                       connect(
                         provider,
                         () => {
-                          toast.success("Wallet connected successfully");
                           setIsModalOpen(false);
                         },
                         (error) => {

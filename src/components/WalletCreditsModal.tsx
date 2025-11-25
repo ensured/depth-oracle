@@ -1,12 +1,5 @@
 "use client";
 
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-} from "@/components/ui/dialog";
 import dynamic from "next/dynamic";
 import WalletConnect from "./WalletConnect";
 import { useCardano } from "@cardano-foundation/cardano-connect-with-wallet";
@@ -22,26 +15,14 @@ const DynamicTransactionBuilder = dynamic(
     { ssr: false }
 );
 
-interface WalletCreditsModalProps {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    creditInfo?: {
-        remaining: number;
-        plan: string;
-        resetDate?: string;
-    } | null;
-    onSuccess?: () => void;
-}
 
-export function WalletCreditsModal({ open, onOpenChange, creditInfo: propCreditInfo, onSuccess }: WalletCreditsModalProps) {
+export function WalletCreditsModal() {
     const { user, isLoaded } = useUser();
     const [internalCreditInfo, setInternalCreditInfo] = useState<{
         remaining: number;
         plan: string;
         resetDate?: string;
     } | null>(null);
-
-    const [isProcessing, setIsProcessing] = useState(false);
     const { isConnected } = useCardano({
         limitNetwork: network,
     });
@@ -58,125 +39,91 @@ export function WalletCreditsModal({ open, onOpenChange, creditInfo: propCreditI
     }, [user?.id]);
 
     useEffect(() => {
-        // If prop is provided, don't fetch
-        if (propCreditInfo) return;
-
-        // If modal is not open, don't fetch (optimization)
-        if (!open) return;
-
         if (isLoaded) {
             fetchCreditInfo();
         }
-    }, [isLoaded, propCreditInfo, open, fetchCreditInfo]);
+    }, [isLoaded, fetchCreditInfo]);
 
     const handleTransactionSuccess = () => {
-        // Call the parent's onSuccess callback if provided
-        onSuccess?.();
-
         // Also refresh internal state if we're using it
-        if (!propCreditInfo) {
-            fetchCreditInfo();
-        }
+        fetchCreditInfo();
     };
 
-    const handleOpenChange = (newOpen: boolean) => {
-        // Prevent closing if processing
-        if (!newOpen && isProcessing) {
-            return;
-        }
-        onOpenChange(newOpen);
-    };
-
-    const displayCreditInfo = propCreditInfo || internalCreditInfo;
+    const displayCreditInfo = internalCreditInfo;
 
     return (
-        <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent
-                className="sm:max-w-[500px] p-0 overflow-hidden border-border bg-background"
-                onInteractOutside={(e) => {
-                    if (isProcessing) {
-                        e.preventDefault();
-                    }
-                }}
-                onEscapeKeyDown={(e) => {
-                    if (isProcessing) {
-                        e.preventDefault();
-                    }
-                }}
-            >
-                <DialogHeader className="p-6 border-b border-border bg-muted/20">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-primary/10 rounded-full">
-                            <Wallet className="w-6 h-6 text-primary" />
-                        </div>
-                        <div>
-                            <DialogTitle className="text-xl">Wallet & Credits</DialogTitle>
-                            <DialogDescription className="mt-1">
-                                Manage your subscription and credit balance.
-                            </DialogDescription>
+        <div
+            className="sm:max-w-[500px] p-0 overflow-hidden border-border bg-background"
+        >
+            <div className="p-6 border-b border-border bg-muted/20">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-full">
+                        <Wallet className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                        <div className="text-xl">Wallet & Credits</div>
+                        <div className="mt-1">
+                            Manage your subscription and credit balance.
                         </div>
                     </div>
-                </DialogHeader>
-
-                <div className="p-6 space-y-4">
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-3 gap-4">
-                        <div className="flex flex-col items-center p-3 bg-muted/30 rounded-lg border border-border/50">
-                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Balance</span>
-                            <div className="flex items-center gap-1.5">
-                                <Zap className="w-4 h-4 text-amber-500" />
-                                <span className="text-xl font-bold">{displayCreditInfo ? displayCreditInfo.remaining : "-"}</span>
-                            </div>
-                        </div>
-                        <div className="flex flex-col items-center p-3 bg-muted/30 rounded-lg border border-border/50">
-                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Plan</span>
-                            <div className="flex items-center gap-1.5">
-                                <CreditCard className="w-4 h-4 text-blue-500" />
-                                <span className="text-xl font-bold capitalize">{displayCreditInfo ? displayCreditInfo.plan : "-"}</span>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col items-center p-3 bg-muted/30 rounded-lg border border-border/50">
-                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Reset</span>
-                            <div className="flex items-center gap-1.5">
-                                <Calendar className="w-4 h-4 text-green-500" />
-                                <span className="text-sm font-bold">
-                                    {displayCreditInfo?.plan === "pro" ? "N/A" :
-                                        displayCreditInfo?.resetDate ? new Date(displayCreditInfo.resetDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : "-"}
-                                </span>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    {/* Wallet Connection */}
-                    <div className="space-y-3">
-                        <h4 className="text-sm font-medium text-foreground/80">Wallet Connection</h4>
-                        <div className={isConnected ? "p-4 rounded-lg border border-border bg-card" : ""}>
-                            <WalletConnect />
-                        </div>
-                    </div>
-
-                    {/* Transaction Builder */}
-                    {isConnected && (
-                        <div className="rounded-lg flex flex-col items-center space-y-3 pt-5 border border-border bg-muted/20 hover:bg-muted/30 shadow-sm overflow-hidden">
-                            <h4 className="text-sm font-medium text-foreground/80 flex items-center gap-2">
-                                <Zap className="w-4 h-4 text-blue-500" />
-                                Top Up Credits
-                            </h4>
-                            <div className="w-full flex items-center justify-center gap-2 py-2">
-                                {!displayCreditInfo || !isConnected ?
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin " />
-                                    : <DynamicTransactionBuilder
-                                        creditsRemaining={displayCreditInfo?.remaining || 0}
-                                        onTransactionSuccess={handleTransactionSuccess}
-                                        onProcessingChange={setIsProcessing}
-                                    />}
-                            </div>
-                        </div>
-                    )}
                 </div>
-            </DialogContent>
-        </Dialog>
+            </div>
+
+            <div className="p-6 space-y-4">
+                {/* Stats Grid */}
+                <div className="grid grid-cols-3 gap-4">
+                    <div className="flex flex-col items-center p-3 bg-muted/30 rounded-lg border border-border/50">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Balance</span>
+                        <div className="flex items-center gap-1.5">
+                            <Zap className="w-4 h-4 text-amber-500" />
+                            <span className="text-xl font-bold">{displayCreditInfo ? displayCreditInfo.remaining : "-"}</span>
+                        </div>
+                    </div>
+                    <div className="flex flex-col items-center p-3 bg-muted/30 rounded-lg border border-border/50">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Plan</span>
+                        <div className="flex items-center gap-1.5">
+                            <CreditCard className="w-4 h-4 text-blue-500" />
+                            <span className="text-xl font-bold capitalize">{displayCreditInfo ? displayCreditInfo.plan : "-"}</span>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col items-center p-3 bg-muted/30 rounded-lg border border-border/50">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Reset</span>
+                        <div className="flex items-center gap-1.5">
+                            <Calendar className="w-4 h-4 text-green-500" />
+                            <span className="text-sm font-bold">
+                                {displayCreditInfo?.plan === "pro" ? "N/A" :
+                                    displayCreditInfo?.resetDate ? new Date(displayCreditInfo.resetDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : "-"}
+                            </span>
+                        </div>
+                    </div>
+
+                </div>
+
+                {/* Wallet Connection */}
+                <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-foreground/80">Wallet Connection</h4>
+                    <div className={isConnected ? "p-4 rounded-lg border border-border bg-card" : ""}>
+                        <WalletConnect />
+                    </div>
+                </div>
+
+                {/* Transaction Builder */}
+                {isConnected && (
+                    <div className="rounded-lg flex flex-col items-center space-y-3 pt-5 border border-border bg-muted/20 hover:bg-muted/30 shadow-sm overflow-hidden">
+                        <h4 className="text-sm font-medium text-foreground/80 flex items-center gap-2">
+                            <Zap className="w-4 h-4 text-blue-500" />
+                            Top Up Credits
+                        </h4>
+                        <div className="w-full flex items-center justify-center gap-2">
+                            <DynamicTransactionBuilder
+                                creditsRemaining={displayCreditInfo?.remaining || 0}
+                                onTransactionSuccess={handleTransactionSuccess}
+                            />
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
     );
 }
