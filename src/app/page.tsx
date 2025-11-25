@@ -5,7 +5,7 @@ export default async function Home() {
   const supabase = await getSupabaseInstance()
   const { data, error } = await supabase.from("token_usage").select("*").limit(1);
   if (!error) console.log(data)
-
+  console.log(error)
 
   // // give all new users a free pro plan (change)
   // const { userId } = await auth()
