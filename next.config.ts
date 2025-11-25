@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // output: "standalone",
   reactStrictMode: true,
+  turbopack: {},
   webpack: (config, { isServer }) => {
     config.experiments = {
       asyncWebAssembly: true,

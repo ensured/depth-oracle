@@ -1,3 +1,4 @@
+"use client";
 import { motion } from "framer-motion"; // Optional for subtle animation
 import { HelpCircle, Info, Play } from "lucide-react"; // Icons for flair
 import { Button } from "@/components/ui/button";

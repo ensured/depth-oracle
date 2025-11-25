@@ -89,6 +89,52 @@ const TIMEFRAME_MAP: Record<string, string> = {
     "1d": "D",
 };
 
+// Timeframe duration in minutes
+const TIMEFRAME_MINUTES: Record<string, number> = {
+    "1m": 1,
+    "5m": 5,
+    "15m": 15,
+    "1h": 60,
+    "4h": 240,
+    "1d": 1440,
+};
+
+// Number of candles we typically analyze (adjust based on your API limits)
+const CANDLE_COUNT = 200;
+
+// Format time with relative date (e.g., "Yesterday at 5:34 PM")
+const formatContextTime = (timestamp: number): string => {
+    const date = new Date(timestamp * 1000);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+    const timeStr = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+
+    // Check if it's today
+    if (targetDate.getTime() === today.getTime()) {
+        return `Today at ${timeStr}`;
+    }
+
+    // Check if it's yesterday
+    if (targetDate.getTime() === yesterday.getTime()) {
+        return `Yesterday at ${timeStr}`;
+    }
+
+    // Check if it's within the last 7 days
+    const daysDiff = Math.floor((today.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
+    if (daysDiff < 7 && daysDiff > 0) {
+        const dayName = date.toLocaleDateString([], { weekday: 'long' });
+        return `${dayName} at ${timeStr}`;
+    }
+
+    // For older dates, show the date
+    const dateStr = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    return `${dateStr} at ${timeStr}`;
+};
+
 // Helper functions for AI analysis calculations
 const calculateEMA = (data: number[], period: number): number[] => {
     if (data.length < period) return [];
@@ -129,7 +175,7 @@ const calculateOBV = (closes: number[], volumes: number[]): number[] => {
     return obv;
 };
 
-export default function TAClientComponentWrapper({
+export default function TA({
     symbol: initialSymbol,
     timeframe: initialTimeframe,
 }: Props) {
@@ -141,21 +187,42 @@ export default function TAClientComponentWrapper({
     const [aiAnalysis, setAiAnalysis] = useState<AIAnalysisResult | null>(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [scriptLoaded, setScriptLoaded] = useState(false);
+    const [earliestCandleTime, setEarliestCandleTime] = useState<number | null>(null);
 
     const { theme } = useTheme();
 
+    // Calculate earliest candle time based on timeframe
+    useEffect(() => {
+        const now = Math.floor(Date.now() / 1000); // Current time in seconds
+        const timeframeMinutes = TIMEFRAME_MINUTES[timeframe] || 60;
+        const totalMinutes = CANDLE_COUNT * timeframeMinutes;
+        const earliestTime = now - (totalMinutes * 60); // Convert minutes to seconds
+        setEarliestCandleTime(earliestTime);
+    }, [timeframe]);
+
     // Load TradingView script
     useEffect(() => {
+        // Only run in browser
+        if (typeof window === 'undefined') return;
+
+        let isMounted = true;
+
         // Check if already loaded
         if (window.TradingView) {
-            setScriptLoaded(true);
+            if (isMounted) {
+                setScriptLoaded(true);
+            }
             return;
         }
 
         // Check if script tag already exists
         const existingScript = document.querySelector('script[src="https://s3.tradingview.com/tv.js"]');
         if (existingScript) {
-            existingScript.addEventListener('load', () => setScriptLoaded(true));
+            existingScript.addEventListener('load', () => {
+                if (isMounted) {
+                    setScriptLoaded(true);
+                }
+            });
             return;
         }
 
@@ -164,11 +231,14 @@ export default function TAClientComponentWrapper({
         script.src = "https://s3.tradingview.com/tv.js";
         script.async = true;
         script.onload = () => {
-            setScriptLoaded(true);
+            if (isMounted) {
+                setScriptLoaded(true);
+            }
         };
         document.head.appendChild(script);
 
         return () => {
+            isMounted = false;
             // Don't remove script on cleanup - keep it loaded
         };
     }, []);
@@ -194,7 +264,7 @@ export default function TAClientComponentWrapper({
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
                 theme: theme === "dark" ? "dark" : "light",
                 style: "1", // Candlestick
-                locale: "en",
+                locale: "en-US",
                 toolbar_bg: theme === "dark" ? "#09090b" : "#ffffff",
                 enable_publishing: false,
                 hide_side_toolbar: false,
@@ -225,6 +295,11 @@ export default function TAClientComponentWrapper({
 
             if (!candles || candles.length === 0) {
                 throw new Error("No candle data available");
+            }
+
+            // Store the earliest candle time for display
+            if (candles.length > 0) {
+                setEarliestCandleTime(candles[0].time);
             }
 
             // Calculate EMAs
@@ -360,30 +435,40 @@ export default function TAClientComponentWrapper({
                                     <SelectItem value="1d">1d</SelectItem>
                                 </SelectContent>
                             </Select>
+
+                            {/* AI Context Display */}
+                            {earliestCandleTime && (
+                                <div className="px-3 py-1.5 rounded-md bg-muted/50 border border-border">
+                                    <p className="text-xs text-muted-foreground">
+                                        📊 Context: <span className="font-medium text-foreground">{formatContextTime(earliestCandleTime)}</span>
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </CardHeader>
                     <CardContent className="p-2 flex flex-col rounded-md">
                         {/* TradingView Chart Container - Auto-Updates in Real-Time */}
                         <div id="tradingview_chart" ref={chartContainerRef} className="w-full rounded-md" style={{ height: "600px" }} />
                     </CardContent>
-                </Card>
-            </div>
+                </Card >
+            </div >
 
             {/* AI Analysis Sidebar */}
-            <div className="space-y-6">
+            < div className="space-y-6" >
                 <Card className="h-full flex flex-col border-border">
                     <CardHeader className="bg-secondary mx-6 p-2 rounded-sm flex justify-center">
                         <CardTitle className="text-xl font-bold flex gap-2">
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                transition={{ duration: 0.5 }}
+                                transition={{ duration: 0.5 }
+                                }
                                 className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-700 dark:from-purple-400 dark:to-pink-600"
                             >
                                 <span className="text-white">🤖</span> AI Analyst Pro
-                            </motion.div>
-                        </CardTitle>
-                    </CardHeader>
+                            </motion.div >
+                        </CardTitle >
+                    </CardHeader >
 
                     <CardContent className="flex-1 flex flex-col gap-6">
                         <Button
@@ -507,8 +592,8 @@ export default function TAClientComponentWrapper({
                             </div>
                         )}
                     </CardContent>
-                </Card>
-            </div>
+                </Card >
+            </div >
         </div >
     );
 }

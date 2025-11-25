@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { network } from "@/types/network";
+import { Button } from "./ui/button";
 
 type PaymentMethod = "ADA" | "IAG" | "SNEK";
 
@@ -112,21 +113,25 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
     };
 
     if (txHash && !hasNotifiedRef.current) {
-      // Start polling immediately
-      checkConfirmations();
-      setIsPolling(true);
+      // Wait 20 seconds before starting to poll (transactions take time to appear on-chain)
+      const initialDelay = setTimeout(() => {
+        // First check
+        checkConfirmations();
+        setIsPolling(true);
 
-      // Then poll every 15 seconds
-      pollingIntervalRef.current = setInterval(checkConfirmations, 15000);
+        // Then poll every 15 seconds
+        pollingIntervalRef.current = setInterval(checkConfirmations, 15000);
+      }, 20000);
+
+      // Cleanup on unmount or when txHash changes
+      return () => {
+        clearTimeout(initialDelay);
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+      };
     }
-
-    // Cleanup on unmount or when txHash changes
-    return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-      }
-    };
   }, [txHash, user?.id, onTransactionSuccess]);
 
   // Check Token balances when wallet is connected
@@ -255,18 +260,19 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
   }
 
   return (
-    <div className="px-5 py-4 space-y-4">
+    <div className="px-5 pb-6 space-y-4 flex flex-col items-center">
       {/* Main action button */}
       {creditsRemaining > 0 ? (
-        <button className="text-zinc-100 w-full py-2.5 rounded-md text-xs font-medium transition-all bg-green-900/50 cursor-not-allowed border border-green-900/30">Use remaining {creditsRemaining} credits before buying more</button>
+        <Button variant="success">Use remaining {creditsRemaining} credits before buying more</Button>
       ) : (
-        <button
-          className="text-zinc-100 w-full py-2.5 rounded-md text-xs font-medium transition-all focus:outline-none focus:ring-1 bg-green-900/90 hover:bg-green-800 border border-green-900/60 focus:ring-green-700/30"
+        <Button
+          variant="success"
           onClick={() => setIsDialogOpen(true)}
           disabled={!isConnected}
+          className="cursor-pointer"
         >
           Buy 100 Credits
-        </button>
+        </Button>
       )}
 
       {/* Error state */}
@@ -283,8 +289,6 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
         txHash && (
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
-
-
               {isPolling && confirmations === 0 ? (
                 <>
                   <Loader2 className="w-3 h-3 animate-spin text-yellow-500" />
