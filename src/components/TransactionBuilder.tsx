@@ -2,7 +2,7 @@
 
 import { useCardano } from "@cardano-foundation/cardano-connect-with-wallet";
 import { useState, useEffect, useRef } from "react";
-import { Emulator, Lucid, LucidEvolution, WalletApi } from "@lucid-evolution/lucid";
+import { Emulator, Lucid, LucidEvolution, mintingPolicyToId, Native, paymentCredentialOf, Script, scriptFromNative, unixTimeToSlot, UTxO, WalletApi } from "@lucid-evolution/lucid";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Loader2, Coins, Wallet } from "lucide-react";
@@ -17,16 +17,12 @@ import {
 } from "@/components/ui/dialog";
 import { network } from "@/types/network";
 import { Button } from "./ui/button";
+import { Card } from "./ui/card";
 
 type PaymentMethod = "ADA" | "IAG" | "SNEK";
 
-interface TransactionBuilderProps {
-  creditsRemaining: number;
-  onTransactionSuccess?: () => void;
-  onProcessingChange?: (isProcessing: boolean) => void;
-}
 
-export default function TransactionBuilder({ creditsRemaining, onTransactionSuccess, onProcessingChange }: TransactionBuilderProps) {
+export default function TransactionBuilder() {
   const [txHash, setTxHash] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,17 +37,15 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
   const [totalSNEK, setTotalSNEK] = useState<bigint>(0n);
   const [lucid, setLucid] = useState<LucidEvolution | null>(null);
   const [api, setApi] = useState<WalletApi | null>(null);
+  const [mintingPolicy, setMintingPolicy] = useState<Script | null>(null);
+  const [hasNft, setHasNft] = useState(false);
+  const [utxo, setUtxo] = useState<UTxO | null>(null);
 
   const { user } = useUser();
 
   const { isConnected, usedAddresses, enabledWallet, accountBalance } = useCardano({
     limitNetwork: network
   });
-
-  // Notify parent of processing state changes
-  useEffect(() => {
-    onProcessingChange?.(isLoading || isPolling);
-  }, [isLoading, isPolling, onProcessingChange]);
 
   // Poll for transaction confirmations
   useEffect(() => {
@@ -78,12 +72,12 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
             // Show different toast message based on whether credits were added
             if (data.credited) {
               toast.success("Transaction Confirmed!", {
-                description: "100 credits have been added to your account! 🎉",
+                description: "NFT Subscription minted!",
                 duration: 5000,
                 position: "top-center",
               });
-              // Trigger success callback to refresh balance
-              onTransactionSuccess?.();
+              // refetch utxos again here
+              // await fetchFunction();
             } else {
               toast.success("Transaction Confirmed!", {
                 description: `Your transaction has ${data.confirmations} confirmation${data.confirmations > 1 ? "s" : ""}!`,
@@ -113,26 +107,21 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
     };
 
     if (txHash && !hasNotifiedRef.current) {
-      // Wait 20 seconds before starting to poll (transactions take time to appear on-chain)
-      const initialDelay = setTimeout(() => {
-        // First check
-        checkConfirmations();
-        setIsPolling(true);
+      // First check
+      checkConfirmations();
+      setIsPolling(true);
 
-        // Then poll every 15 seconds
-        pollingIntervalRef.current = setInterval(checkConfirmations, 15000);
-      }, 20000);
-
+      // Then poll every 15 seconds
+      pollingIntervalRef.current = setInterval(checkConfirmations, 15000);
       // Cleanup on unmount or when txHash changes
       return () => {
-        clearTimeout(initialDelay);
         if (pollingIntervalRef.current) {
           clearInterval(pollingIntervalRef.current);
           pollingIntervalRef.current = null;
         }
       };
     }
-  }, [txHash, user?.id, onTransactionSuccess]);
+  }, [txHash, user?.id]);
 
   // Check Token balances when wallet is connected
   useEffect(() => {
@@ -187,6 +176,23 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
     checkTokenBalances();
   }, [isConnected, enabledWallet]);
 
+  const createMintingPolicy = () => {
+    const mintingPolicy = scriptFromNative({
+      type: "all",
+      scripts: [
+        { type: "sig", keyHash: paymentCredentialOf(usedAddresses[0]).hash },
+        {
+          type: "all",
+          scripts: [
+            { type: "sig", keyHash: paymentCredentialOf(usedAddresses[0]).hash },
+          ],
+        },
+      ],
+    });
+    setMintingPolicy(mintingPolicy);
+    return mintingPolicy;
+  };
+
   const handleBuildTransaction = async () => {
     if (!isConnected || !enabledWallet) {
       setError("Wallet not connected");
@@ -205,6 +211,12 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
         throw new Error("Lucid or API not initialized");
       }
       lucid.selectWallet.fromAPI(api);
+      let mintingPolicy;
+      if (!mintingPolicy) {
+        mintingPolicy = createMintingPolicy();
+      }
+
+      console.log("mintingPolicy", mintingPolicy);
 
       // Make API request to build transaction
       const response = await fetch("/api/transaction", {
@@ -215,11 +227,12 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
         body: JSON.stringify({
           address: usedAddresses[0],
           walletBalance: accountBalance,
-          paymentMethod: paymentMethod
+          paymentMethod: paymentMethod,
+          mintingPolicy: mintingPolicy
         }),
       });
 
-      const { tx, fee, error } = await response.json();
+      const { tx, error } = await response.json();
       if (error) {
         throw new Error(error);
       }
@@ -235,14 +248,6 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
 
       setTxHash(txHash);
       setIsDialogOpen(false); // Close dialog on success
-
-      // Show fee in toast
-      if (fee) {
-        toast.info("Transaction Fee", {
-          description: `Network Fee: ${(Number(fee) / 1_000_000).toFixed(6)} ADA`,
-          duration: 5000,
-        });
-      }
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : "Unknown error");
@@ -259,22 +264,73 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
     );
   }
 
+  useEffect(() => {
+    const CheckForNftSubscription = async () => {
+      const mintingPolicy = scriptFromNative({
+        type: "all",
+        scripts: [
+          { type: "sig", keyHash: paymentCredentialOf(usedAddresses[0]).hash },
+          {
+            type: "all",
+            scripts: [
+              { type: "sig", keyHash: paymentCredentialOf(usedAddresses[0]).hash },
+            ],
+          },
+        ],
+      });
+      if (!api) return;
+      const utxos = await lucid?.wallet().getUtxos();
+      if (!utxos) return;
+      const mintingPolicyId = mintingPolicyToId(mintingPolicy);
+      const assetName = '597570'; // 'Yuh' in hex
+      const unit = mintingPolicyId + assetName;
+
+      Object.entries(utxos).forEach((utxo) => {
+        if (utxo[1].assets[unit]) {
+          console.log("minting policy found in this utxo:", utxo[1]);
+          setHasNft(true);
+          setUtxo(utxo[1]);
+        }
+      });
+    }
+
+    CheckForNftSubscription();
+  }, [api]);
+
   return (
     <div className="px-5 pb-6 space-y-4 flex flex-col items-center">
       {/* Main action button */}
-      {creditsRemaining > 0 ? (
-        <Button variant="success">Use remaining {creditsRemaining} credits before buying more</Button>
-      ) : (
+
+      {/* create minting policy */}
+      <div>
+        {!mintingPolicy && !hasNft && (
+          <Button onClick={createMintingPolicy}>Create Minting Policy First</Button>
+        )}
+        {mintingPolicy && (
+          <div className="flex flex-col space-y-2 break-all">
+            Minting Policy ID Created: {mintingPolicyToId(mintingPolicy)}
+          </div>
+        )}
+        {hasNft && (
+          <div className="flex flex-col space-y-2 break-all">
+            You own an NFT Subscription in this utxo:
+            {JSON.stringify(utxo, (_, value) =>
+              typeof value === 'bigint' ? value.toString() : value
+              , 2)}
+          </div>
+        )}
+      </div>
+
+      {mintingPolicy && (
         <Button
           variant="success"
           onClick={() => setIsDialogOpen(true)}
           disabled={!isConnected}
           className="cursor-pointer"
         >
-          Buy 100 Credits
+          Buy NFT Subscription
         </Button>
       )}
-
       {/* Error state */}
       {
         error && (
@@ -337,7 +393,7 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
           <DialogHeader>
             <DialogTitle>Choose Payment Method</DialogTitle>
             <DialogDescription>
-              Select how you&apos;d like to pay for 100 credits
+              Select how you&apos;d like to pay for your NFT Subscription
             </DialogDescription>
           </DialogHeader>
 

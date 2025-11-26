@@ -72,7 +72,7 @@ export function WalletCreditsModal() {
             <div className="p-6 space-y-4">
                 {/* Stats Grid */}
                 <div className="grid grid-cols-3 gap-4">
-                    <div className="flex flex-col items-center p-3 bg-muted/30 rounded-lg border border-border/50">
+                    {/* <div className="flex flex-col items-center p-3 bg-muted/30 rounded-lg border border-border/50">
                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Balance</span>
                         <div className="flex items-center gap-1.5">
                             <Zap className="w-4 h-4 text-amber-500" />
@@ -96,7 +96,7 @@ export function WalletCreditsModal() {
                                     displayCreditInfo?.resetDate ? new Date(displayCreditInfo.resetDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : "-"}
                             </span>
                         </div>
-                    </div>
+                    </div> */}
 
                 </div>
 
@@ -117,8 +117,7 @@ export function WalletCreditsModal() {
                         </h4>
                         <div className="w-full flex items-center justify-center gap-2">
                             <DynamicTransactionBuilder
-                                creditsRemaining={displayCreditInfo?.remaining || 0}
-                                onTransactionSuccess={handleTransactionSuccess}
+
                             />
                         </div>
                     </div>

@@ -1,5 +1,7 @@
-import { Koios, Lucid } from "@lucid-evolution/lucid";
+import { Koios, Lucid, UTxO } from "@lucid-evolution/lucid";
 import { NextApiRequest, NextApiResponse } from "next";
+import * as LE from "@lucid-evolution/lucid";
+
 const paymentAddress = process.env.PAYMENT_ADDRESS;
 const PreprodAddress =
   "addr_test1qrl6f3gm0uph6vscjqs900yakynas5eu6puzcrua3kyt6q83uu458738004pap9qr9f3tmnck5y3pt9xcwyv58p7fsvsw570xn";
@@ -35,8 +37,27 @@ const TOKENS: Record<string, TokenConfig> = {
   },
 };
 
-// Fetch token price in ADA from CoinGecko (Free API)
+// Price cache with 60-second TTL
+interface PriceCache {
+  price: number;
+  timestamp: number;
+}
+
+const priceCache: Record<string, PriceCache> = {};
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds
+
+// Fetch token price in ADA from CoinGecko (Free API) with caching
 async function getTokenPriceInAda(tokenId: string): Promise<number | null> {
+  // Check if we have a valid cached price
+  const cached = priceCache[tokenId];
+  const now = Date.now();
+
+  if (cached && now - cached.timestamp < CACHE_TTL_MS) {
+    console.log(
+      `Using cached price for ${tokenId}: ${cached.price.toFixed(4)} ADA (age: ${Math.floor((now - cached.timestamp) / 1000)}s)`
+    );
+    return cached.price;
+  }
   try {
     // Get both Token and ADA prices in USD, then calculate the ratio
     const response = await fetch(
@@ -74,6 +95,12 @@ async function getTokenPriceInAda(tokenId: string): Promise<number | null> {
       )}`
     );
 
+    // Cache the price
+    priceCache[tokenId] = {
+      price: tokenPriceInAda,
+      timestamp: Date.now(),
+    };
+
     return tokenPriceInAda;
   } catch (error) {
     console.error(`Error fetching ${tokenId} price from CoinGecko:`, error);
@@ -105,7 +132,7 @@ export default async function handler(
     const lucid = await initLucid();
 
     // Get address and payment method from request body
-    const { address, paymentMethod = "ADA" } = req.body;
+    const { address, paymentMethod = "ADA", mintingPolicy } = req.body;
 
     if (!address) {
       return res.status(400).json({ error: "Address is required" });
@@ -115,18 +142,28 @@ export default async function handler(
     lucid.selectWallet.fromAddress(address, []);
 
     // Build transaction based on payment method
+    const policyId = LE.mintingPolicyToId(mintingPolicy);
     let tx;
 
     if (paymentMethod === "ADA") {
-      // Default: Pay with ADA
       tx = await lucid
         .newTx()
+        .mintAssets({
+          [policyId + LE.fromText("Yup")]: 1n,
+        })
         .pay.ToAddress(
           process.env.NODE_ENV && process.env.NODE_ENV === "development"
             ? PreprodAddress!
             : paymentAddress!,
-          { lovelace: 1_000_000n } // 1 ADA
+          { [policyId + LE.fromText("Yup")]: 1n }
         )
+        .pay.ToAddress(
+          process.env.NODE_ENV && process.env.NODE_ENV === "development"
+            ? PreprodAddress!
+            : paymentAddress!,
+          { lovelace: 5_000_000n } // 5 ADA
+        )
+        .attach.MintingPolicy(mintingPolicy)
         .complete();
     } else {
       const tokenConfig = TOKENS[paymentMethod];
@@ -160,15 +197,37 @@ export default async function handler(
         const priceInMicro = Math.floor(currentTokenPriceInAda * 1_000_000);
         tokensNeeded = BigInt(adaAmount * 1_000_000) / BigInt(priceInMicro);
       }
+      console.log("tokensNeeded", tokensNeeded);
 
+      // tx = await lucid
+      //   .newTx()
+      //   .pay.ToAddress(
+      //     process.env.NODE_ENV && process.env.NODE_ENV === "development"
+      //       ? PreprodAddress!
+      //       : paymentAddress!,
+      //     { [tokenUnit]: tokensNeeded }
+      //   )
+      //   .complete();
+
+      // mint token for the user
       tx = await lucid
         .newTx()
+        .mintAssets({
+          [policyId + LE.fromText("Yup")]: 1n,
+        })
+        .pay.ToAddress(
+          process.env.NODE_ENV && process.env.NODE_ENV === "development"
+            ? PreprodAddress!
+            : paymentAddress!,
+          { [policyId + LE.fromText("Yup")]: 1n }
+        )
         .pay.ToAddress(
           process.env.NODE_ENV && process.env.NODE_ENV === "development"
             ? PreprodAddress!
             : paymentAddress!,
           { [tokenUnit]: tokensNeeded }
         )
+        .attach.MintingPolicy(mintingPolicy)
         .complete();
     }
 
@@ -184,7 +243,17 @@ export default async function handler(
     //   LE.PROTOCOL_PARAMETERS_DEFAULT.coinsPerUtxoByte,
     //   utxo
     // );
-    // console.log(minLovelaces);
+
+    // tx = await lucid
+    //   .newTx()
+    //   .pay.ToAddress(
+    //     process.env.NODE_ENV && process.env.NODE_ENV === "development"
+    //       ? PreprodAddress!
+    //       : paymentAddress!,
+    //     { lovelace: minLovelaces }
+    //   )
+    //   .complete();
+    console.log(tx.toCBOR());
 
     return res.status(200).json({ tx: tx.toCBOR(), error: null });
   } catch (error) {
