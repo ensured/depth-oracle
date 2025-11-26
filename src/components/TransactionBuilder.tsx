@@ -10,14 +10,17 @@ import { useUser } from "@clerk/nextjs";
 import { HybridTooltip } from "@/components/HybridTooltip";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { network } from "@/types/network";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
+import { DialogTrigger } from "@radix-ui/react-dialog";
 
 type PaymentMethod = "ADA" | "IAG" | "SNEK";
 
@@ -182,10 +185,8 @@ export default function TransactionBuilder() {
       scripts: [
         { type: "sig", keyHash: paymentCredentialOf(usedAddresses[0]).hash },
         {
-          type: "all",
-          scripts: [
-            { type: "sig", keyHash: paymentCredentialOf(usedAddresses[0]).hash },
-          ],
+          type: "before",
+          slot: unixTimeToSlot(lucid!.config().network!, Date.now() + 1000000),
         },
       ],
     });
@@ -312,12 +313,46 @@ export default function TransactionBuilder() {
           </div>
         )}
         {hasNft && (
-          <div className="flex flex-col space-y-2 break-all">
-            You own an NFT Subscription in this utxo:
-            {JSON.stringify(utxo, (_, value) =>
-              typeof value === 'bigint' ? value.toString() : value
-              , 2)}
-          </div>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button>View Subscription</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Subscription</DialogTitle>
+                <DialogDescription>
+                  You own an NFT Subscription in this utxo:
+                </DialogDescription>
+
+              </DialogHeader>
+              <pre className="bg-muted/50 border border-border rounded-lg p-4 text-xs overflow-x-auto">
+                <code className="text-foreground">
+                  {JSON.stringify(
+                    utxo ? {
+                      ...utxo,
+                      assets: Object.fromEntries(
+                        Object.entries(utxo.assets).map(([key, value]) => [
+                          key === 'lovelace' ? 'ADA' : key,
+                          typeof value === 'bigint'
+                            ? (key === 'lovelace' ? (Number(value) / 1_000_000).toFixed(2) : value.toString())
+                            : value
+                        ])
+                      )
+                    } : null,
+                    null,
+                    2
+                  )}
+                </code>
+              </pre>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button>Close</Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+
+
+          </Dialog>
         )}
       </div>
 
