@@ -172,7 +172,7 @@ export default function HeroSection({
                 variant="outline"
                 size="lg"
                 className="text-lg h-14 w-40 cursor-pointer  bg-gradient-to-r text-white hover:text-white select-none from-indigo-600 to-purple-600 shadow-lg hover:from-indigo-700 hover:to-purple-700 transform transition-all duration-300 hover:scale-105 hover:shadow-xl"
-                onClick={() => setShowInputForm?.(false)}
+                onClick={() => setShowInputForm?.(true)}
               >
                 Go to app <span className="text-base">🚀</span>
               </Button>

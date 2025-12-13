@@ -42,7 +42,19 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border backdrop-blur bg-background/80">
       <div className=" flex px-3 sm:px-4 md:px-5 lg:px-6 xl:px-7 h-14 items-center justify-between">
         <div className="flex items-center gap-6 select-none">
-          <Link href="/" className="hover:underline flex items-center gap-1">
+          <Link
+            href="/"
+            className="hover:underline flex items-center gap-1"
+            onClick={(e) => {
+              // Clear the persisted state
+              localStorage.removeItem("depth-oracle-app-active");
+              // If we are already on the home page, force a reload to reset the state
+              if (window.location.pathname === "/") {
+                e.preventDefault();
+                window.location.href = "/";
+              }
+            }}
+          >
 
             <GradientText
               transition={{

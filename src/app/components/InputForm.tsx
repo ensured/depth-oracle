@@ -628,7 +628,7 @@ export default function InputForm({
             >
               <div
                 className={`rounded-2xl px-3 py-2 sm:px-4 sm:py-3 group relative ${message.role === "user"
-                  ? "bg-indigo-600 text-white"
+                  ? "bg-blue-600 text-white"
                   : "border border-indigo-200/50 bg-white/90 text-gray-800 dark:bg-slate-700/90 dark:text-gray-200 dark:border-indigo-700/50 shadow-sm"
                   }`}
               >
