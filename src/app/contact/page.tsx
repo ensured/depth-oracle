@@ -1,6 +1,6 @@
 import { Metadata } from "next";
-import { ContactForm } from "@/components/ContactForm";
-import { Footer } from "@/components/Footer";
+import { ContactForm } from "@/app/components/ContactForm";
+import { Footer } from "@/app/components/Footer";
 
 export const metadata: Metadata = {
   title: "Contact Us",

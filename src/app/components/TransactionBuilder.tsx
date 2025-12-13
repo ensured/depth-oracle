@@ -7,14 +7,14 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Loader2, Coins, Wallet } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
-import { HybridTooltip } from "@/components/HybridTooltip";
+import { HybridTooltip } from "@/app/components/HybridTooltip";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/app/components/ui/dialog";
 import { network } from "@/types/network";
 import { Button } from "./ui/button";
 

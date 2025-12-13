@@ -3,10 +3,10 @@
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { quotes } from "@/lib/jung-quotes";
-import { Switch } from "@/components/ui/switch";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { Switch } from "@/app/components/ui/switch";
+import { Input } from "@/app/components/ui/input";
+import { Label } from "@/app/components/ui/label";
+import { Button } from "@/app/components/ui/button";
 import {
   Check,
   Sparkles,

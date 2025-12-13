@@ -6,7 +6,7 @@ import {
     DialogHeader,
     DialogTitle,
     DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/app/components/ui/dialog";
 import dynamic from "next/dynamic";
 import WalletConnect from "./WalletConnect";
 import { useCardano } from "@cardano-foundation/cardano-connect-with-wallet";

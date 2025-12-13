@@ -3,8 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/lib/theme-provider";
-import { Toaster } from "@/components/ui/sonner";
-import { Header } from "@/components/Header";
+import { Toaster } from "@/app/components/ui/sonner";
+import { Header } from "@/app/components/Header";
 import {
   getOrganizationSchema,
   getWebSiteSchema,

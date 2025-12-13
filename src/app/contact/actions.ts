@@ -1,7 +1,7 @@
 "use server";
 
 import { Resend } from "resend";
-import { ContactFormValues } from "@/components/ContactForm";
+import { ContactFormValues } from "@/app/components/ContactForm";
 import EmailTemplate from "./email-template";
 import FeedbackEmailTemplate from "./feedback-email-template";
 

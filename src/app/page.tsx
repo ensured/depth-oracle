@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import ClientWrapper from "@/components/ClientWrapper";
+import ClientWrapper from "./components/ClientWrapper";
 
 export const metadata: Metadata = {
   title: "Home",

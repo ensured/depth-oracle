@@ -1,6 +1,6 @@
 import { Metadata } from "next";
-import { Footer } from "@/components/Footer";
-import ToS from "@/components/ToS";
+import { Footer } from "@/app/components/Footer";
+import ToS from "@/app/components/ToS";
 
 export const metadata: Metadata = {
   title: "Terms of Service",

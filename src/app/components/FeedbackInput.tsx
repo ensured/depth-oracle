@@ -9,7 +9,7 @@ import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { Star } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/app/components/ui/button";
 import {
   Form,
   FormControl,
@@ -17,10 +17,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { sendFeedbackEmail, FeedbackFormValues } from "../app/contact/actions";
+} from "@/app/components/ui/form";
+import { Input } from "@/app/components/ui/input";
+import { Textarea } from "@/app/components/ui/textarea";
+import { sendFeedbackEmail, FeedbackFormValues } from "../contact/actions";
 import { CheckCircle2Icon } from "lucide-react";
 import { GradientText } from "./ui/shadcn-io/gradient-text";
 

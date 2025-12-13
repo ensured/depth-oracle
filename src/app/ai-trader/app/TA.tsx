@@ -1,20 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
+import { Badge } from "@/app/components/ui/badge";
+import { Button } from "@/app/components/ui/button";
+import { Progress } from "@/app/components/ui/progress";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
+} from "@/app/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { motion } from "motion/react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/app/components/ui/skeleton";
 import { useTheme } from "next-themes";
 
 // TradingView Widget Configuration

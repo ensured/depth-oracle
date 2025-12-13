@@ -2,8 +2,8 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/app/components/ui/button";
+import { Textarea } from "@/app/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from "@/app/components/ui/dialog";
 import {
   Download,
   Lightbulb,
@@ -23,11 +23,11 @@ import {
 import {
   CoreArchetypesSection,
   ExpandedArchetypesSection,
-} from "@/components/Archetypes";
-import { HybridTooltip } from "@/components/HybridTooltip";
+} from "@/app/components/Archetypes";
+import { HybridTooltip } from "@/app/components/HybridTooltip";
 import { AI_MODEL } from "@/consts/const";
-import { RollingText } from "@/components/ui/shadcn-io/rolling-text";
-import { ThreadSelector } from "@/components/ThreadSelector";
+import { RollingText } from "@/app/components/ui/shadcn-io/rolling-text";
+import { ThreadSelector } from "@/app/components/ThreadSelector";
 import { toast } from "sonner";
 import {
   getAllThreads,
@@ -541,11 +541,11 @@ export default function InputForm({
           <div className="flex flex-col">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <div className="flex items-center flex-1 min-w-0">
-                <div className="mr-3 sm:mr-4 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 shrink-0">
+                <div className="mr-3 sm:mr-4 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 shrink-0">
                   <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-lg sm:text-xl font-bold text-transparent truncate dark:text-primary">
+                  <h3 className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-lg sm:text-xl font-bold text-transparent truncate dark:text-primary">
                     Chat with Elara
                   </h3>
                   <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
@@ -628,7 +628,7 @@ export default function InputForm({
             >
               <div
                 className={`rounded-2xl px-3 py-2 sm:px-4 sm:py-3 group relative ${message.role === "user"
-                  ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+                  ? "bg-indigo-600 text-white"
                   : "border border-indigo-200/50 bg-white/90 text-gray-800 dark:bg-slate-700/90 dark:text-gray-200 dark:border-indigo-700/50 shadow-sm"
                   }`}
               >
@@ -684,7 +684,8 @@ export default function InputForm({
                   </div>
                 )}
 
-                <div className="prose prose-sm dark:prose-invert max-w-none break-words prose-p:leading-relaxed prose-pre:p-0 pr-4 overflow-hidden">
+                <div className={`prose prose-sm max-w-none break-words prose-p:leading-relaxed prose-pre:p-0 pr-4 overflow-hidden ${message.role === "user" ? "prose-invert" : "dark:prose-invert"
+                  }`}>
                   <MessageMarkdown content={message.content} />
                 </div>
 

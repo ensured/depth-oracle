@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import ImagePreview from "@/components/ImagePreview";
-import { Button } from "@/components/ui/button";
+import ImagePreview from "@/app/components/ImagePreview";
+import { Button } from "@/app/components/ui/button";
 import dynamic from "next/dynamic";
 import { useState } from "react";
 
 // Dynamically import WalletCreditsModal to avoid SSR issues
 const WalletCreditsModal = dynamic(
-    () => import("@/components/WalletCreditsModal").then(mod => ({ default: mod.WalletCreditsModal })),
+    () => import("@/app/components/WalletCreditsModal").then(mod => ({ default: mod.WalletCreditsModal })),
     { ssr: false }
 );
 

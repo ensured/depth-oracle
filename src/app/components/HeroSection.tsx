@@ -1,8 +1,8 @@
 "use client";
 import { motion } from "framer-motion"; // Optional for subtle animation
 import { HelpCircle, Info, Play } from "lucide-react"; // Icons for flair
-import { Button } from "@/components/ui/button";
-import { HybridTooltip } from "@/components/HybridTooltip";
+import { Button } from "@/app/components/ui/button";
+import { HybridTooltip } from "@/app/components/HybridTooltip";
 import {
   Dialog,
   DialogContent,
@@ -10,20 +10,20 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import VideoJS from "@/components/VideoJS";
+} from "@/app/components/ui/dialog";
+import VideoJS from "@/app/components/VideoJS";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/app/components/ui/dropdown-menu";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import Image from "next/image";
-import ogImage from "../../public/og-image-transparent.png";
+import ogImage from "../../../public/og-image-transparent.png";
 import videojs from "video.js";
 import { useWindowWidth } from "@/hooks/useWindowWidth";
-import { WalletCreditsModal } from "@/components/WalletCreditsModal";
+import { WalletCreditsModal } from "@/app/components/WalletCreditsModal";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 export default function HeroSection({

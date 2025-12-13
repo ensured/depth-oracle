@@ -1,9 +1,9 @@
 "use client";
 
 import { UserButton, useUser, SignInButton } from "@clerk/nextjs";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ThemeToggle } from "@/app/components/theme-toggle";
+import { Button } from "@/app/components/ui/button";
+import { Skeleton } from "@/app/components/ui/skeleton";
 import { User } from "lucide-react";
 import Link from "next/link";
 import { GradientText } from "./ui/shadcn-io/gradient-text";

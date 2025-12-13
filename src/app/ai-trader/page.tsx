@@ -1,8 +1,8 @@
 "use client";
 import { motion } from "framer-motion";
 import { HelpCircle, Play, TrendingUp, BarChart3, Zap, LineChart, Activity } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { HybridTooltip } from "@/components/HybridTooltip";
+import { Button } from "@/app/components/ui/button";
+import { HybridTooltip } from "@/app/components/HybridTooltip";
 import {
     Dialog,
     DialogContent,
@@ -10,8 +10,8 @@ import {
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-} from "@/components/ui/dialog";
-import VideoJS from "@/components/VideoJS";
+} from "@/app/components/ui/dialog";
+import VideoJS from "@/app/components/VideoJS";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import videojs from "video.js";
 import dynamic from "next/dynamic";
@@ -22,7 +22,7 @@ import { isProSubscribed } from "./app/actions";
 
 // Dynamically import WalletCreditsModal to avoid SSR issues with Cardano wallet
 const WalletCreditsModal = dynamic(
-    () => import("@/components/WalletCreditsModal").then(mod => ({ default: mod.WalletCreditsModal })),
+    () => import("@/app/components/WalletCreditsModal").then(mod => ({ default: mod.WalletCreditsModal })),
     { ssr: false }
 );
 

@@ -3,9 +3,9 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 
 // Use dynamic import with no SSR for Main (which contains WASM components)
-const DynamicMain = dynamic(() => import("@/components/Main"), { ssr: false });
+const DynamicMain = dynamic(() => import("@/app/components/Main"), { ssr: false });
 // Use dynamic import for HeroSection as well since it uses window (VideoJS, etc)
-const DynamicHeroSection = dynamic(() => import("@/components/HeroSection"), {
+const DynamicHeroSection = dynamic(() => import("@/app/components/HeroSection"), {
   ssr: false,
 });
 
