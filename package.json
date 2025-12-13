@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint"
   },
+  "packageManager": "pnpm@9.15.0",
   "dependencies": {
     "@breezystack/lamejs": "^1.2.7",
     "@cardano-foundation/cardano-connect-with-wallet": "^0.2.9",
