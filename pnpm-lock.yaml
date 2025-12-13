@@ -19,6 +19,7 @@ importers:
         version: 0.2.8
       '@clerk/nextjs':
         specifier: ^6.33.7
+<<<<<<< HEAD
         version: 6.36.2(next@16.0.10(@babel/core@7.28.5)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@harmoniclabs/bytestring':
         specifier: ^1.0.0
@@ -26,6 +27,9 @@ importers:
       '@harmoniclabs/cbor':
         specifier: ^1.6.6
         version: 1.6.6
+=======
+        version: 6.35.2(next@16.0.10(@babel/core@7.26.10)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+>>>>>>> b8d5ef53845b0f993466cbd93df7333449f0b011
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.68.0(react@19.2.0))
@@ -103,7 +107,11 @@ importers:
         version: 12.23.26(@emotion/is-prop-valid@1.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       next:
         specifier: 16.0.10
+<<<<<<< HEAD
         version: 16.0.10(@babel/core@7.28.5)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+=======
+        version: 16.0.10(@babel/core@7.26.10)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+>>>>>>> b8d5ef53845b0f993466cbd93df7333449f0b011
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -960,9 +968,12 @@ packages:
   '@multiformats/multiaddr@12.5.1':
     resolution: {integrity: sha512-+DDlr9LIRUS8KncI1TX/FfUn8F2dl6BIxJgshS/yFQCNB5IAF0OGzcwB39g5NLE22s4qqDePv0Qof6HdpJ/4aQ==}
 
+<<<<<<< HEAD
   '@napi-rs/wasm-runtime@0.2.12':
     resolution: {integrity: sha512-ZVWUcfwY4E/yPitQJl481FjFo3K22D6qF0DuFH6Y/nbnE11GY5uguDxZMGXPQ8WQ0128MXQD7TnfHyK4oWoIJQ==}
 
+=======
+>>>>>>> b8d5ef53845b0f993466cbd93df7333449f0b011
   '@next/env@16.0.10':
     resolution: {integrity: sha512-8tuaQkyDVgeONQ1MeT9Mkk8pQmZapMKFh5B+OrFUlG3rVmYTXcXlBetBgTurKXGaIZvkoqRT9JL5K3phXcgang==}
 
@@ -5488,6 +5499,7 @@ snapshots:
       react-dom: 19.2.0(react@19.2.0)
       tslib: 2.8.1
 
+<<<<<<< HEAD
   '@clerk/nextjs@6.36.2(next@16.0.10(@babel/core@7.28.5)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
     dependencies:
       '@clerk/backend': 2.27.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -5495,6 +5507,15 @@ snapshots:
       '@clerk/shared': 3.39.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@clerk/types': 4.101.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       next: 16.0.10(@babel/core@7.28.5)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+=======
+  '@clerk/nextjs@6.35.2(next@16.0.10(@babel/core@7.26.10)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+    dependencies:
+      '@clerk/backend': 2.23.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      '@clerk/clerk-react': 5.56.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      '@clerk/shared': 3.35.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      '@clerk/types': 4.101.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      next: 16.0.10(@babel/core@7.26.10)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+>>>>>>> b8d5ef53845b0f993466cbd93df7333449f0b011
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
       server-only: 0.0.1
@@ -6096,6 +6117,7 @@ snapshots:
       uint8-varint: 2.0.4
       uint8arrays: 5.1.0
 
+<<<<<<< HEAD
   '@napi-rs/wasm-runtime@0.2.12':
     dependencies:
       '@emnapi/core': 1.7.1
@@ -6103,6 +6125,8 @@ snapshots:
       '@tybys/wasm-util': 0.10.1
     optional: true
 
+=======
+>>>>>>> b8d5ef53845b0f993466cbd93df7333449f0b011
   '@next/env@16.0.10': {}
 
   '@next/eslint-plugin-next@16.0.3':
@@ -9454,7 +9478,11 @@ snapshots:
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
 
+<<<<<<< HEAD
   next@16.0.10(@babel/core@7.28.5)(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
+=======
+  next@16.0.10(@babel/core@7.26.10)(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
+>>>>>>> b8d5ef53845b0f993466cbd93df7333449f0b011
     dependencies:
       '@next/env': 16.0.10
       '@swc/helpers': 0.5.15
