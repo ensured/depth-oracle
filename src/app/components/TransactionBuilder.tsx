@@ -2,7 +2,12 @@
 
 import { useCardano } from "@cardano-foundation/cardano-connect-with-wallet";
 import { useState, useEffect, useRef } from "react";
-import { Emulator, Lucid, LucidEvolution, WalletApi } from "@lucid-evolution/lucid";
+import {
+  Emulator,
+  Lucid,
+  LucidEvolution,
+  WalletApi,
+} from "@lucid-evolution/lucid";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Loader2, Coins, Wallet } from "lucide-react";
@@ -26,7 +31,11 @@ interface TransactionBuilderProps {
   onProcessingChange?: (isProcessing: boolean) => void;
 }
 
-export default function TransactionBuilder({ creditsRemaining, onTransactionSuccess, onProcessingChange }: TransactionBuilderProps) {
+export default function TransactionBuilder({
+  creditsRemaining,
+  onTransactionSuccess,
+  onProcessingChange,
+}: TransactionBuilderProps) {
   const [txHash, setTxHash] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,14 +53,17 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
 
   const { user } = useUser();
 
-  const { isConnected, usedAddresses, enabledWallet, accountBalance } = useCardano({
-    limitNetwork: network
-  });
+  const { isConnected, usedAddresses, enabledWallet, accountBalance } =
+    useCardano({
+      limitNetwork: network,
+    });
 
   // Notify parent of processing state changes
   useEffect(() => {
-    onProcessingChange?.(isLoading || isPolling);
-  }, [isLoading, isPolling, onProcessingChange]);
+    onProcessingChange?.(
+      isLoading || isPolling || (!!txHash && confirmations === 0)
+    );
+  }, [isLoading, isPolling, txHash, confirmations, onProcessingChange]);
 
   // Poll for transaction confirmations
   useEffect(() => {
@@ -92,12 +104,14 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
               });
             }
 
-            // Stop polling after confirmation
+            // Stop polling after confirmation and close dialog
             if (pollingIntervalRef.current) {
               clearInterval(pollingIntervalRef.current);
               pollingIntervalRef.current = null;
               setIsPolling(false);
             }
+            // Close dialog only after transaction is fully confirmed
+            setIsDialogOpen(false);
           }
         } else if (response.status === 404) {
           // Transaction not yet on-chain, this is normal - keep polling
@@ -153,12 +167,14 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
         const utxos = await lucid.wallet().getUtxos();
 
         // IAG Constants
-        const IAG_POLICY_ID = "5d16cc1a177b5d9ba9cfa9793b07e60f1fb70fea1f8aef064415d114";
+        const IAG_POLICY_ID =
+          "5d16cc1a177b5d9ba9cfa9793b07e60f1fb70fea1f8aef064415d114";
         const IAG_ASSET_NAME = "494147"; // "IAG" in hex
         const IAG_UNIT = IAG_POLICY_ID + IAG_ASSET_NAME;
 
         // SNEK Constants
-        const SNEK_POLICY_ID = "279c909f348e533da5808898f87f9a14bb2c3dfbbacccd631d927a3f";
+        const SNEK_POLICY_ID =
+          "279c909f348e533da5808898f87f9a14bb2c3dfbbacccd631d927a3f";
         const SNEK_ASSET_NAME = "534e454b"; // "SNEK" in hex
         const SNEK_UNIT = SNEK_POLICY_ID + SNEK_ASSET_NAME;
 
@@ -215,7 +231,7 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
         body: JSON.stringify({
           address: usedAddresses[0],
           walletBalance: accountBalance,
-          paymentMethod: paymentMethod
+          paymentMethod: paymentMethod,
         }),
       });
 
@@ -234,7 +250,7 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
       }
 
       setTxHash(txHash);
-      setIsDialogOpen(false); // Close dialog on success
+      setIsDialogOpen(false); // Close payment dialog immediately after signing
 
       // Show fee in toast
       if (fee) {
@@ -263,7 +279,9 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
     <div className="px-5 pb-6 space-y-4 flex flex-col items-center">
       {/* Main action button */}
       {creditsRemaining > 0 ? (
-        <Button variant="success">Use remaining {creditsRemaining} credits before buying more</Button>
+        <Button variant="success">
+          Use remaining {creditsRemaining} credits before buying more
+        </Button>
       ) : (
         <Button
           variant="success"
@@ -276,60 +294,56 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
       )}
 
       {/* Error state */}
-      {
-        error && (
-          <div className="py-2 px-3 bg-red-500/10 dark:bg-red-950/30 border border-red-900/30 rounded-md text-xs">
-            {error}
-          </div>
-        )
-      }
+      {error && (
+        <div className="py-2 px-3 bg-red-500/10 dark:bg-red-950/30 border border-red-900/30 rounded-md text-xs">
+          {error}
+        </div>
+      )}
 
       {/* Success state */}
-      {
-        txHash && (
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              {isPolling && confirmations === 0 ? (
-                <>
-                  <Loader2 className="w-3 h-3 animate-spin text-yellow-500" />
-                  <HybridTooltip
-                    content={
-                      <div>
-                        This usually takes less than a minute to confirm.
-                      </div>
-                    }
-                  >
-                    <span className="text-xs font-medium text-yellow-400 cursor-help border-b border-dotted border-yellow-400/50">
-                      {isChecking ? "Checking for confirmation..." : "Waiting for confirmation..."}
-                    </span>
-                  </HybridTooltip>
-                </>
-              ) : (
-                <>
-                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                  <span className="text-xs font-medium text-green-400">
-                    Transaction Confirmed!
-                  </span>
-                </>
-              )}
-            </div>
-            <div className=" border border-border rounded-md overflow-hidden">
-              <div className="px-3 py-2 border-b border-border text-[10px] ">
-                Transaction Hash
-              </div>
-              <div className="px-3 py-2 font-mono text-xs break-all">
-                <Link
-                  className="hover:underline"
-                  target="_blank"
-                  href={`https://preprod.cardanoscan.io/transaction/${txHash}`}
+      {txHash && (
+        <div className="space-y-2">
+          <div className="flex items-center space-x-2">
+            {isPolling || confirmations === 0 ? (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin text-yellow-500" />
+                <HybridTooltip
+                  content={
+                    <div>This usually takes less than a minute to confirm.</div>
+                  }
                 >
-                  {txHash}
-                </Link>
-              </div>
+                  <span className="text-xs font-medium text-yellow-400 cursor-help border-b border-dotted border-yellow-400/50">
+                    {isChecking
+                      ? "Checking for confirmation..."
+                      : "Waiting for confirmation..."}
+                  </span>
+                </HybridTooltip>
+              </>
+            ) : (
+              <>
+                <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                <span className="text-xs font-medium text-green-400">
+                  Transaction Confirmed!
+                </span>
+              </>
+            )}
+          </div>
+          <div className=" border border-border rounded-md overflow-hidden">
+            <div className="px-3 py-2 border-b border-border text-[10px] ">
+              Transaction Hash
+            </div>
+            <div className="px-3 py-2 font-mono text-xs break-all">
+              <Link
+                className="hover:underline"
+                target="_blank"
+                href={`https://preprod.cardanoscan.io/transaction/${txHash}`}
+              >
+                {txHash}
+              </Link>
             </div>
           </div>
-        )
-      }
+        </div>
+      )}
 
       {/* Payment Method Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -345,22 +359,26 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
             {/* ADA Payment Option */}
             <button
               onClick={() => setPaymentMethod("ADA")}
-              className={`w-full p-4 rounded-lg border-2 transition-all text-left ${paymentMethod === "ADA"
-                ? "border-green-500 bg-green-500/10"
-                : "border-border hover:border-green-500/50"
-                }`}
+              className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                paymentMethod === "ADA"
+                  ? "border-green-500 bg-green-500/10"
+                  : "border-border hover:border-green-500/50"
+              }`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className={`p-2 rounded-lg ${paymentMethod === "ADA" ? "bg-green-500/20" : "bg-muted"
-                    }`}>
+                  <div
+                    className={`p-2 rounded-lg ${
+                      paymentMethod === "ADA" ? "bg-green-500/20" : "bg-muted"
+                    }`}
+                  >
                     <Wallet className="w-5 h-5" />
                   </div>
                   <div>
                     <div className="font-semibold text-sm">Pay with ADA</div>
                     <div className="text-xs text-muted-foreground">
                       {accountBalance != null
-                        ? `${accountBalance.toLocaleString('en-US', { maximumFractionDigits: 0 })} ADA available`
+                        ? `${accountBalance.toLocaleString("en-US", { maximumFractionDigits: 0 })} ADA available`
                         : "Loading..."}
                     </div>
                   </div>
@@ -377,17 +395,21 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
             <button
               onClick={() => setPaymentMethod("IAG")}
               disabled={totalIAG === 0n}
-              className={`w-full p-4 rounded-lg border-2 transition-all text-left ${paymentMethod === "IAG"
-                ? "border-green-500 bg-green-500/10"
-                : totalIAG === 0n
-                  ? "border-border opacity-50 cursor-not-allowed"
-                  : "border-border hover:border-green-500/50"
-                }`}
+              className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                paymentMethod === "IAG"
+                  ? "border-green-500 bg-green-500/10"
+                  : totalIAG === 0n
+                    ? "border-border opacity-50 cursor-not-allowed"
+                    : "border-border hover:border-green-500/50"
+              }`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className={`p-2 rounded-lg ${paymentMethod === "IAG" ? "bg-green-500/20" : "bg-muted"
-                    }`}>
+                  <div
+                    className={`p-2 rounded-lg ${
+                      paymentMethod === "IAG" ? "bg-green-500/20" : "bg-muted"
+                    }`}
+                  >
                     <Coins className="w-5 h-5" />
                   </div>
                   <div>
@@ -395,8 +417,7 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
                     <div className="text-xs text-muted-foreground">
                       {totalIAG === 0n
                         ? "No IAG tokens available"
-                        : `${(Number(totalIAG) / 1_000_000).toFixed(2)} IAG available`
-                      }
+                        : `${(Number(totalIAG) / 1_000_000).toFixed(2)} IAG available`}
                     </div>
                   </div>
                 </div>
@@ -412,17 +433,21 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
             <button
               onClick={() => setPaymentMethod("SNEK")}
               disabled={totalSNEK === 0n}
-              className={`w-full p-4 rounded-lg border-2 transition-all text-left ${paymentMethod === "SNEK"
-                ? "border-green-500 bg-green-500/10"
-                : totalSNEK === 0n
-                  ? "border-border opacity-50 cursor-not-allowed"
-                  : "border-border hover:border-green-500/50"
-                }`}
+              className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                paymentMethod === "SNEK"
+                  ? "border-green-500 bg-green-500/10"
+                  : totalSNEK === 0n
+                    ? "border-border opacity-50 cursor-not-allowed"
+                    : "border-border hover:border-green-500/50"
+              }`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className={`p-2 rounded-lg ${paymentMethod === "SNEK" ? "bg-green-500/20" : "bg-muted"
-                    }`}>
+                  <div
+                    className={`p-2 rounded-lg ${
+                      paymentMethod === "SNEK" ? "bg-green-500/20" : "bg-muted"
+                    }`}
+                  >
                     <Coins className="w-5 h-5" />
                   </div>
                   <div>
@@ -430,8 +455,7 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
                     <div className="text-xs text-muted-foreground">
                       {totalSNEK === 0n
                         ? "No SNEK tokens available"
-                        : `${totalSNEK.toLocaleString()} SNEK available`
-                      }
+                        : `${totalSNEK.toLocaleString()} SNEK available`}
                     </div>
                   </div>
                 </div>
@@ -447,7 +471,8 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
           <div className="flex justify-end space-x-2 pt-2">
             <button
               onClick={() => setIsDialogOpen(false)}
-              className="px-4 py-2 text-sm rounded-md border border-border hover:bg-muted transition-colors"
+              disabled={isLoading || !!txHash}
+              className="px-4 py-2 text-sm rounded-md border border-border hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
@@ -468,6 +493,6 @@ export default function TransactionBuilder({ creditsRemaining, onTransactionSucc
           </div>
         </DialogContent>
       </Dialog>
-    </div >
+    </div>
   );
 }
