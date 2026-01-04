@@ -165,13 +165,11 @@ export function WalletCreditsModal({ open, onOpenChange, creditInfo: propCreditI
                                 Top Up Credits
                             </h4>
                             <div className="w-full flex items-center justify-center gap-2 py-2">
-                                {!displayCreditInfo || !isConnected ?
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin " />
-                                    : <DynamicTransactionBuilder
+                                <DynamicTransactionBuilder
                                         creditsRemaining={displayCreditInfo?.remaining || 0}
                                         onTransactionSuccess={handleTransactionSuccess}
                                         onProcessingChange={setIsProcessing}
-                                    />}
+                                    />
                             </div>
                         </div>
                     )}
