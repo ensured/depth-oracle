@@ -66,8 +66,14 @@ export function Header() {
               text="Depth Oracle"
             />
           </Link>
-
-          <nav className="hidden sm:flex items-center gap-4">
+          <Link
+            href="/quotes"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+          >
+            <span className="text-blue-500">🌙👁️‍🗨️</span>
+            Carl Jung Quotes
+          </Link>
+          {/* <nav className="hidden sm:flex items-center gap-4">
             <Link
               href="/ai-trader"
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
@@ -75,7 +81,7 @@ export function Header() {
               <span className="text-blue-500">📊</span>
               AI Trader
             </Link>
-          </nav>
+          </nav> */}
         </div>
 
         <div className="flex items-center gap-2">
